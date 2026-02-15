@@ -64,6 +64,8 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.Calendar
+import com.fedeveloper95.games.elements.ui.GameHubTheme
+import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 
 class AdvancedSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -83,6 +83,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.PI
+import com.fedeveloper95.games.elements.ui.GameHubTheme
+import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 
 data class OnboardingPageInfo(
     val content: @Composable (onUpdateScrollState: (Boolean) -> Unit) -> Unit
