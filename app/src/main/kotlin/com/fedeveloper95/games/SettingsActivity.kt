@@ -1,6 +1,5 @@
 package com.fedeveloper95.games
 
-import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -65,7 +64,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
@@ -73,10 +71,7 @@ import com.fedeveloper95.games.elements.SettingsActivity.ThemePopup
 import com.fedeveloper95.games.elements.SettingsActivity.CardStylePopup
 import com.fedeveloper95.games.elements.SettingsActivity.NamePopup
 import com.fedeveloper95.games.elements.SettingsActivity.GameOrderPopup
-import com.fedeveloper95.games.elements.SettingsActivity.UpdateDialog
-import com.fedeveloper95.games.elements.SettingsActivity.ExpressiveIconButton
-import com.fedeveloper95.games.services.SettingsActivity.UpdateStatus
-import com.fedeveloper95.games.services.SettingsActivity.Updater
+import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,14 +115,6 @@ const val PREF_STATS_INTERVAL = "pref_stats_interval"
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    fun Context.findActivity(): Activity? = when (this) {
-        is Activity -> this
-        is android.content.ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
-
-    val activity = context.findActivity()
-    val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
 
     var currentTheme by remember { mutableIntStateOf(prefs.getInt(PREF_THEME, THEME_SYSTEM)) }
@@ -147,11 +134,6 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showSortDialog by remember { mutableStateOf(false) }
     var showNameDialog by remember { mutableStateOf(false) }
 
-    val openUpdateDialog = remember { activity?.intent?.getBooleanExtra("EXTRA_OPEN_UPDATE_DIALOG", false) == true }
-    var showUpdateDialog by remember { mutableStateOf(openUpdateDialog) }
-
-    var updateStatus by remember { mutableStateOf<UpdateStatus>(UpdateStatus.Idle) }
-
     val isPixel = remember {
         val brand = Build.BRAND
         val manufacturer = Build.MANUFACTURER
@@ -166,22 +148,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             "v$version ($build)"
         } catch (e: Exception) {
             context.getString(R.string.unknown)
-        }
-    }
-
-    val currentVersionName = remember {
-        try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0"
-        } catch (e: Exception) {
-            "1.0"
-        }
-    }
-
-    LaunchedEffect(openUpdateDialog) {
-        if (openUpdateDialog) {
-            updateStatus = UpdateStatus.Checking
-            val update = Updater.checkForUpdates(currentVersionName)
-            updateStatus = if (update != null) UpdateStatus.Available(update) else UpdateStatus.NoUpdate
         }
     }
 
@@ -557,12 +523,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                 iconColor = Color(0xFF004e5d),
                 shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
                 onClick = {
-                    showUpdateDialog = true
-                    updateStatus = UpdateStatus.Checking
-                    scope.launch {
-                        val update = Updater.checkForUpdates(currentVersionName)
-                        updateStatus = if (update != null) UpdateStatus.Available(update) else UpdateStatus.NoUpdate
-                    }
+                    val intent = Intent(context, UpdaterActivity::class.java)
+                    context.startActivity(intent)
                 }
             )
 
@@ -611,27 +573,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 showSortDialog = false
             },
             onDismiss = { showSortDialog = false }
-        )
-    }
-
-    if (showUpdateDialog) {
-        UpdateDialog(
-            status = updateStatus,
-            onDismiss = {
-                showUpdateDialog = false
-                activity?.intent?.removeExtra("EXTRA_OPEN_UPDATE_DIALOG")
-            },
-            onUpdate = { url ->
-                Updater.startDownload(context, url, (updateStatus as UpdateStatus.Available).info.version)
-                showUpdateDialog = false
-            },
-            onCheckAgain = {
-                updateStatus = UpdateStatus.Checking
-                scope.launch {
-                    val update = Updater.checkForUpdates(currentVersionName)
-                    updateStatus = if (update != null) UpdateStatus.Available(update) else UpdateStatus.NoUpdate
-                }
-            }
         )
     }
 }

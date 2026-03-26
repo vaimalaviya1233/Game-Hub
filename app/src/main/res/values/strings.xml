@@ -158,5 +158,9 @@
     <string name="community_desc">Join my Telegram channel to not miss the latest news and updates on my projects, along with some exclusive sneak peeks!</string>
     <string name="no_thanks">No, thanks</string>
     <string name="sure_action">Sure!</string>
+    <string name="see_source_code">See source code</string>
+    <string name="check_updates_action">Check for updates</string>
+    <string name="update_error_check">Unable to check for updates</string>
+    <string name="cancel_action">Cancel</string>
 
 </resources>

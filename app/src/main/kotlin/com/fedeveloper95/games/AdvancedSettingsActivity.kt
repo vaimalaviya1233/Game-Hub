@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
-import com.fedeveloper95.games.elements.SettingsActivity.ExpressiveIconButton
+import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.RestartPopup
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.exportSettings
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.importSettings

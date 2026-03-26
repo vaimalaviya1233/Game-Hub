@@ -1,8 +1,12 @@
 package com.fedeveloper95.games.elements.SettingsActivity
 
 import android.content.Context
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +25,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +53,14 @@ fun GameOrderPopup(
         "Alphabetical" to stringResource(R.string.sort_alphabetical),
         "Time" to stringResource(R.string.sort_playtime),
         "Custom" to stringResource(R.string.sort_custom)
+    )
+
+    val dismissInteractionSource = remember { MutableInteractionSource() }
+    val isDismissPressed by dismissInteractionSource.collectIsPressedAsState()
+    val dismissCorner by animateIntAsState(
+        targetValue = if (isDismissPressed) 15 else 50,
+        animationSpec = tween(durationMillis = 200),
+        label = "dismissCorner"
     )
 
     AlertDialog(
@@ -111,7 +124,11 @@ fun GameOrderPopup(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(dismissCorner),
+                interactionSource = dismissInteractionSource
+            ) {
                 Text(
                     text = stringResource(R.string.cancel),
                     fontFamily = GoogleSansFlex,

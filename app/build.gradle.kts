@@ -12,8 +12,8 @@ android {
         applicationId = "com.fedeveloper95.games"
         minSdk = 26
         targetSdk = 37
-        versionCode = 16
-        versionName = "1.6"
+        versionCode = 20
+        versionName = "2.0"
     }
 
     signingConfigs {
@@ -68,4 +68,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.coil.compose)
     implementation(libs.sh.calvin.reorderable)
+    implementation("com.github.jeziellago:compose-markdown:0.5.4")
 }

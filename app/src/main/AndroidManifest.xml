@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -52,6 +53,12 @@
             android:name=".EditModeActivity"
             android:exported="false"
             android:theme="@style/Theme.GameHub" />
+
+        <activity
+            android:name=".UpdaterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GameHub"
+            />
 
         <provider
             android:name="androidx.core.content.FileProvider"

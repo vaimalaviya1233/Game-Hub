@@ -295,7 +295,22 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        floatingActionButton = {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = searchQuery.isEmpty(),
+                enter = scaleIn(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
+                exit = scaleOut(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200))
+            ) {
+                FloatingActionButton(
+                    onClick = { showAddSheet = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_game))
+                }
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -530,23 +545,6 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                         }
                     }
                 }
-
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = searchQuery.isEmpty(),
-                    enter = scaleIn(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
-                    exit = scaleOut(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200)),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 48.dp)
-                ) {
-                    FloatingActionButton(
-                        onClick = { showAddSheet = true },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_game))
-                    }
-                }
             }
         }
     }
@@ -587,6 +585,34 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                 prefs.edit().putString("last_version", currentVersionName).apply()
             }
         )
+    }
+}
+
+@Composable
+fun AnimatedShopButton(onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val cornerPercent by animateIntAsState(
+        targetValue = if (isPressed) 15 else 50,
+        animationSpec = tween(durationMillis = 200),
+        label = "btnMorph"
+    )
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(40.dp),
+        shape = RoundedCornerShape(cornerPercent),
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        interactionSource = interactionSource
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.Outlined.ShoppingBag,
+                contentDescription = "Store"
+            )
+        }
     }
 }
 
@@ -696,13 +722,7 @@ fun HorizontalGameCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            IconButton(onClick = onStoreClick) {
-                Icon(
-                    imageVector = Icons.Outlined.ShoppingBag,
-                    contentDescription = "Store",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            AnimatedShopButton(onClick = onStoreClick)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -992,13 +1012,8 @@ fun GameListItem(
                 )
             }
 
-            IconButton(onClick = onStoreClick) {
-                Icon(
-                    imageVector = Icons.Outlined.ShoppingBag,
-                    contentDescription = "Store Page",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            AnimatedShopButton(onClick = onStoreClick)
+
             Spacer(modifier = Modifier.width(4.dp))
             AnimatedPlayButton(onClick = onLaunch)
         }
