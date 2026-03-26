@@ -11,9 +11,9 @@ android {
     defaultConfig {
         applicationId = "com.fedeveloper95.games"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 15
-        versionName = "1.5"
+        targetSdk = 37
+        versionCode = 16
+        versionName = "1.6"
     }
 
     signingConfigs {
@@ -53,17 +53,12 @@ android {
 }
 
 dependencies {
-    // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.graphics.shapes)
-
-    // Lifecycle
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
-
-    // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -71,8 +66,6 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons)
     debugImplementation(libs.androidx.compose.ui.tooling)
-
-    // Third Party
     implementation(libs.coil.compose)
     implementation(libs.sh.calvin.reorderable)
 }

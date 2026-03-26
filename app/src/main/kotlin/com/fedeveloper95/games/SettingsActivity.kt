@@ -7,75 +7,76 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
+import com.fedeveloper95.games.elements.SettingsActivity.ThemePopup
+import com.fedeveloper95.games.elements.SettingsActivity.CardStylePopup
+import com.fedeveloper95.games.elements.SettingsActivity.NamePopup
+import com.fedeveloper95.games.elements.SettingsActivity.GameOrderPopup
+import com.fedeveloper95.games.elements.SettingsActivity.UpdateDialog
+import com.fedeveloper95.games.elements.SettingsActivity.ExpressiveIconButton
+import com.fedeveloper95.games.services.SettingsActivity.UpdateStatus
+import com.fedeveloper95.games.services.SettingsActivity.Updater
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -138,7 +139,6 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showPlayTime by remember { mutableStateOf(prefs.getBoolean(PREF_SHOW_PLAY_TIME, true)) }
     var statsInterval by remember { mutableFloatStateOf(prefs.getFloat(PREF_STATS_INTERVAL, 3f)) }
 
-
     var showUserName by remember { mutableStateOf(prefs.getBoolean(PREF_SHOW_USER_NAME, true)) }
     var userName by remember { mutableStateOf(prefs.getString(PREF_USER_NAME, "User") ?: "User") }
 
@@ -198,10 +198,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.discard)
+                    Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp)) {
+                        ExpressiveIconButton(
+                            onClick = onBack,
+                            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.discard),
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -242,7 +245,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
                 containerColor = Color(0xFFfcbd00),
                 iconColor = Color(0xFF6d3a01),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
                 onClick = { showThemeDialog = true }
             )
 
@@ -263,7 +266,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             val nameSwitchShape = if (showUserName) {
                 RoundedCornerShape(4.dp)
             } else {
-                RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
+                RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
             }
 
             SettingsSwitchCard(
@@ -293,7 +296,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         subtitle = userName,
                         containerColor = Color(0xFFe7e0ec),
                         iconColor = Color(0xFF49454f),
-                        shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
+                        shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
                         onClick = { showNameDialog = true }
                     )
                 }
@@ -321,7 +324,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
                 containerColor = Color(0xFF67d4ff),
                 iconColor = Color(0xFF004e5d),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
                 onClick = { showSortDialog = true }
             )
 
@@ -476,7 +479,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 subtitle = stringResource(R.string.settings_advanced_desc),
                 containerColor = Color(0xFFC5C0FF),
                 iconColor = Color(0xFF2D237A),
-                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
+                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
                 onClick = {
                     val intent = Intent(context, AdvancedSettingsActivity::class.java)
                     context.startActivity(intent)
@@ -501,10 +504,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                 subtitle = appInfo,
                 containerColor = Color(0xFFa1c9ff),
                 iconColor = Color(0xFF0641a0),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
                 onClick = {
                     try {
-                        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                             data = Uri.fromParts("package", context.packageName, null)
                         }
                         context.startActivity(intent)
@@ -552,7 +555,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 subtitle = stringResource(R.string.settings_check_updates_desc),
                 containerColor = Color(0xFF67d4ff),
                 iconColor = Color(0xFF004e5d),
-                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
+                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
                 onClick = {
                     showUpdateDialog = true
                     updateStatus = UpdateStatus.Checking
@@ -567,100 +570,22 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
     }
 
-
     if (showNameDialog) {
-        var tempName by remember { mutableStateOf(userName) }
-
-        val interactionSource = remember { MutableInteractionSource() }
-        val isPressed by interactionSource.collectIsPressedAsState()
-        val cornerPercent by animateIntAsState(
-            targetValue = if (isPressed) 15 else 50,
-            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            label = "btnMorph"
-        )
-
-        AlertDialog(
-            onDismissRequest = { showNameDialog = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.dialog_edit_name_title),
-                    fontFamily = GoogleSansFlex,
-                    fontWeight = FontWeight.Bold
-                )
+        NamePopup(
+            currentName = userName,
+            onNameSaved = { newName ->
+                userName = newName
+                showNameDialog = false
             },
-            text = {
-                OutlinedTextField(
-                    value = tempName,
-                    onValueChange = { tempName = it },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.dialog_edit_name_hint),
-                            fontFamily = GoogleSansFlex
-                        )
-                    },
-                    textStyle = TextStyle(
-                        fontFamily = GoogleSansFlex,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (tempName.isNotBlank()) {
-                            userName = tempName
-                            prefs.edit().putString(PREF_USER_NAME, tempName).apply()
-                        }
-                        showNameDialog = false
-                    },
-                    shape = RoundedCornerShape(cornerPercent),
-                    interactionSource = interactionSource,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Text(
-                        text = stringResource(R.string.save),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNameDialog = false }) {
-                    Text(
-                        text = stringResource(R.string.cancel),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            onDismiss = { showNameDialog = false }
         )
     }
 
     if (showThemeDialog) {
-        ExpressiveSingleChoiceDialog(
-            icon = Icons.Default.Palette,
-            title = stringResource(R.string.settings_theme_title),
-            options = listOf(
-                stringResource(R.string.settings_theme_system),
-                stringResource(R.string.settings_theme_light),
-                stringResource(R.string.settings_theme_dark)
-            ),
-            selectedIndex = currentTheme,
-            onOptionSelected = { index ->
+        ThemePopup(
+            currentTheme = currentTheme,
+            onThemeSelected = { index ->
                 currentTheme = index
-                prefs.edit().putInt(PREF_THEME, index).apply()
                 showThemeDialog = false
             },
             onDismiss = { showThemeDialog = false }
@@ -668,26 +593,10 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
 
     if (showStyleDialog) {
-        val options = listOf(
-            stringResource(R.string.settings_card_style_default),
-            stringResource(R.string.settings_card_style_horizontal),
-            stringResource(R.string.settings_card_style_grid)
-        )
-        val currentIndex = options.indexOf(currentCardStyle).coerceAtLeast(0)
-
-        ExpressiveSingleChoiceDialog(
-            icon = Icons.Default.ViewAgenda,
-            title = stringResource(R.string.settings_card_style_title),
-            options = options,
-            selectedIndex = currentIndex,
-            onOptionSelected = { index ->
-                val newStyle = when(index) {
-                    0 -> CARD_STYLE_DEFAULT
-                    1 -> CARD_STYLE_HORIZONTAL
-                    else -> CARD_STYLE_GRID
-                }
+        CardStylePopup(
+            currentStyle = currentCardStyle,
+            onStyleSelected = { newStyle ->
                 currentCardStyle = newStyle
-                prefs.edit().putString(PREF_CARD_STYLE, newStyle).apply()
                 showStyleDialog = false
             },
             onDismiss = { showStyleDialog = false }
@@ -695,30 +604,10 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
 
     if (showSortDialog) {
-        val options = listOf(
-            stringResource(R.string.sort_alphabetical),
-            stringResource(R.string.sort_playtime),
-            stringResource(R.string.sort_custom)
-        )
-        val currentIndex = when(currentSortType) {
-            "Alphabetical" -> 0
-            "Time" -> 1
-            else -> 2
-        }
-
-        ExpressiveSingleChoiceDialog(
-            icon = Icons.Default.Sort,
-            title = stringResource(R.string.settings_sort_title),
-            options = options,
-            selectedIndex = currentIndex,
-            onOptionSelected = { index ->
-                val newSort = when(index) {
-                    0 -> "Alphabetical"
-                    1 -> "Time"
-                    else -> "Custom"
-                }
+        GameOrderPopup(
+            currentSort = currentSortType,
+            onSortSelected = { newSort ->
                 currentSortType = newSort
-                prefs.edit().putString(PREF_SORT_TYPE, newSort).apply()
                 showSortDialog = false
             },
             onDismiss = { showSortDialog = false }
@@ -748,213 +637,6 @@ fun SettingsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun AnimatedUpdateButton(onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val cornerPercent by animateIntAsState(
-        targetValue = if (isPressed) 15 else 50,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "btnMorph"
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
-        shape = RoundedCornerShape(cornerPercent),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        interactionSource = interactionSource
-    ) {
-        Text(
-            text = stringResource(R.string.update_action),
-            fontFamily = GoogleSansFlex,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelLarge
-        )
-    }
-}
-
-@Composable
-fun AnimatedCheckAgainButton(onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val cornerPercent by animateIntAsState(
-        targetValue = if (isPressed) 15 else 50,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-        label = "btnMorph"
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
-        shape = RoundedCornerShape(cornerPercent),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        interactionSource = interactionSource
-    ) {
-        Text(
-            text = stringResource(R.string.settings_check_updates_title),
-            fontFamily = GoogleSansFlex,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelLarge
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun UpdateDialog(
-    status: UpdateStatus,
-    onDismiss: () -> Unit,
-    onUpdate: (String) -> Unit,
-    onCheckAgain: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(
-                        when(status) {
-                            is UpdateStatus.Error -> MaterialTheme.colorScheme.errorContainer
-                            is UpdateStatus.Available -> MaterialTheme.colorScheme.primaryContainer
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = when(status) {
-                        is UpdateStatus.Error -> Icons.Default.Error
-                        is UpdateStatus.Available -> Icons.Default.SystemUpdate
-                        else -> Icons.Default.CloudDownload
-                    },
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = when(status) {
-                        is UpdateStatus.Error -> MaterialTheme.colorScheme.onErrorContainer
-                        is UpdateStatus.Available -> MaterialTheme.colorScheme.onPrimaryContainer
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-        },
-        title = {
-            Text(
-                text = when(status) {
-                    is UpdateStatus.Checking -> stringResource(R.string.update_checking)
-                    is UpdateStatus.NoUpdate -> stringResource(R.string.update_no_update)
-                    is UpdateStatus.Available -> stringResource(R.string.update_available, status.info.version)
-                    is UpdateStatus.Error -> stringResource(R.string.update_error)
-                    else -> ""
-                },
-                fontFamily = GoogleSansFlex,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                when(status) {
-                    is UpdateStatus.Checking -> {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        LoadingIndicator(
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    is UpdateStatus.NoUpdate -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.update_latest_version_msg),
-                            fontFamily = GoogleSansFlex,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                    is UpdateStatus.Available -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 200.dp)
-                                .clip(RoundedCornerShape(16.dp)),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        ) {
-                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                Text(
-                                    text = status.info.changelog,
-                                    fontFamily = GoogleSansFlex,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(16.dp)
-                                )
-                            }
-                        }
-                    }
-                    is UpdateStatus.Error -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.update_error_msg),
-                            fontFamily = GoogleSansFlex,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    else -> {}
-                }
-            }
-        },
-        confirmButton = {
-            if (status is UpdateStatus.Available) {
-                AnimatedUpdateButton(onClick = { onUpdate(status.info.downloadUrl) })
-            } else if (status is UpdateStatus.NoUpdate || status is UpdateStatus.Error) {
-                AnimatedCheckAgainButton(onClick = onCheckAgain)
-            }
-        },
-        dismissButton = {
-            if (status is UpdateStatus.Available) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        stringResource(R.string.later),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            } else if (status is UpdateStatus.NoUpdate || status is UpdateStatus.Error) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        stringResource(R.string.close),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(32.dp),
-        tonalElevation = 6.dp
-    )
-}
-
-@Composable
 fun SettingsItemCard(
     icon: ImageVector,
     title: String,
@@ -964,9 +646,55 @@ fun SettingsItemCard(
     shape: Shape,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "anim_shape"
+    )
+
+    val animatedShape = remember(shape, pressProgress) {
+        if (shape is RoundedCornerShape) {
+            object : Shape {
+                override fun createOutline(
+                    size: Size,
+                    layoutDirection: LayoutDirection,
+                    density: Density
+                ): Outline {
+                    val targetPx = with(density) { 20.dp.toPx() }
+                    fun lerp(start: Float, stop: Float, fraction: Float) =
+                        (1 - fraction) * start + fraction * stop
+
+                    val ts = lerp(shape.topStart.toPx(size, density), targetPx, pressProgress)
+                    val te = lerp(shape.topEnd.toPx(size, density), targetPx, pressProgress)
+                    val bs = lerp(shape.bottomStart.toPx(size, density), targetPx, pressProgress)
+                    val be = lerp(shape.bottomEnd.toPx(size, density), targetPx, pressProgress)
+
+                    return Outline.Rounded(
+                        androidx.compose.ui.geometry.RoundRect(
+                            rect = androidx.compose.ui.geometry.Rect(
+                                0f,
+                                0f,
+                                size.width,
+                                size.height
+                            ),
+                            topLeft = androidx.compose.ui.geometry.CornerRadius(ts),
+                            topRight = androidx.compose.ui.geometry.CornerRadius(te),
+                            bottomRight = androidx.compose.ui.geometry.CornerRadius(be),
+                            bottomLeft = androidx.compose.ui.geometry.CornerRadius(bs)
+                        )
+                    )
+                }
+            }
+        } else shape
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = shape,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(animatedShape),
+        shape = animatedShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -1007,7 +735,11 @@ fun SettingsItemCard(
                 }
             },
             modifier = Modifier
-                .clickable(onClick = onClick)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = onClick
+                )
                 .padding(vertical = 4.dp),
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent
@@ -1027,9 +759,55 @@ fun SettingsSwitchCard(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "anim_shape"
+    )
+
+    val animatedShape = remember(shape, pressProgress) {
+        if (shape is RoundedCornerShape) {
+            object : Shape {
+                override fun createOutline(
+                    size: Size,
+                    layoutDirection: LayoutDirection,
+                    density: Density
+                ): Outline {
+                    val targetPx = with(density) { 20.dp.toPx() }
+                    fun lerp(start: Float, stop: Float, fraction: Float) =
+                        (1 - fraction) * start + fraction * stop
+
+                    val ts = lerp(shape.topStart.toPx(size, density), targetPx, pressProgress)
+                    val te = lerp(shape.topEnd.toPx(size, density), targetPx, pressProgress)
+                    val bs = lerp(shape.bottomStart.toPx(size, density), targetPx, pressProgress)
+                    val be = lerp(shape.bottomEnd.toPx(size, density), targetPx, pressProgress)
+
+                    return Outline.Rounded(
+                        androidx.compose.ui.geometry.RoundRect(
+                            rect = androidx.compose.ui.geometry.Rect(
+                                0f,
+                                0f,
+                                size.width,
+                                size.height
+                            ),
+                            topLeft = androidx.compose.ui.geometry.CornerRadius(ts),
+                            topRight = androidx.compose.ui.geometry.CornerRadius(te),
+                            bottomRight = androidx.compose.ui.geometry.CornerRadius(be),
+                            bottomLeft = androidx.compose.ui.geometry.CornerRadius(bs)
+                        )
+                    )
+                }
+            }
+        } else shape
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = shape,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(animatedShape),
+        shape = animatedShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -1076,13 +854,13 @@ fun SettingsSwitchCard(
                     thumbContent = {
                         if (checked) {
                             Icon(
-                                imageVector = Icons.Filled.Check,
+                                imageVector = Icons.Rounded.Check,
                                 contentDescription = null,
                                 modifier = Modifier.size(SwitchDefaults.IconSize),
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Filled.Close,
+                                imageVector = Icons.Rounded.Close,
                                 contentDescription = null,
                                 modifier = Modifier.size(SwitchDefaults.IconSize),
                             )
@@ -1090,84 +868,16 @@ fun SettingsSwitchCard(
                     }
                 )
             },
-            modifier = Modifier.padding(vertical = 4.dp),
+            modifier = Modifier
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = { onCheckedChange(!checked) }
+                )
+                .padding(vertical = 4.dp),
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent
             )
         )
     }
-}
-
-@Composable
-fun ExpressiveSingleChoiceDialog(
-    icon: ImageVector,
-    title: String,
-    options: List<String>,
-    selectedIndex: Int,
-    onOptionSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp)
-            )
-        },
-        title = {
-            Text(
-                text = title,
-                fontFamily = GoogleSansFlex,
-                fontWeight = FontWeight.Normal,
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-        },
-        text = {
-            Column(Modifier.selectableGroup()) {
-                options.forEachIndexed { index, text ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .selectable(
-                                selected = (index == selectedIndex),
-                                onClick = { onOptionSelected(index) },
-                                role = Role.RadioButton
-                            )
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (index == selectedIndex),
-                            onClick = null
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = text,
-                            fontFamily = GoogleSansFlex,
-                            fontWeight = FontWeight.Normal,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    stringResource(R.string.discard),
-                    fontFamily = GoogleSansFlex,
-                    fontWeight = FontWeight.Normal,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(32.dp),
-        tonalElevation = 6.dp
-    )
 }

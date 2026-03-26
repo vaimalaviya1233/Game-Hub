@@ -3,7 +3,6 @@ package com.fedeveloper95.games.elements.ui
 import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
@@ -38,18 +37,15 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -63,10 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import coil.compose.AsyncImage
 import com.fedeveloper95.games.R
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalTextApi::class)
 val GoogleSansFlex = FontFamily(
@@ -209,7 +202,6 @@ fun GameHubTheme(
     )
 }
 
-
 @Composable
 fun ExpressiveIconButton(
     onClick: () -> Unit,
@@ -331,32 +323,6 @@ fun HomeSearchBar(
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         singleLine = true
-    )
-}
-
-@Composable
-fun AppIcon(
-    packageName: String,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Crop
-) {
-    val context = LocalContext.current
-    val icon = remember { mutableStateOf<Drawable?>(null) }
-
-    LaunchedEffect(packageName) {
-        withContext(Dispatchers.IO) {
-            try {
-                icon.value = context.packageManager.getApplicationIcon(packageName)
-            } catch (e: Exception) {
-            }
-        }
-    }
-
-    AsyncImage(
-        model = icon.value,
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = contentScale
     )
 }
 

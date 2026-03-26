@@ -17,9 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -44,10 +43,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -60,7 +56,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
@@ -83,32 +78,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fedeveloper95.games.elements.MainActivity.AddAppsBottomSheet
-import com.fedeveloper95.games.elements.MainActivity.DeletePopup
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyGridState
-import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-import com.fedeveloper95.games.components.mainactivity.GameApp
-import com.fedeveloper95.games.components.mainactivity.GameViewModel
-import com.fedeveloper95.games.components.mainactivity.formatPlayTime
+import com.fedeveloper95.games.services.mainactivity.GameApp
+import com.fedeveloper95.games.services.mainactivity.GameViewModel
+import com.fedeveloper95.games.services.mainactivity.formatPlayTime
+import com.fedeveloper95.games.elements.MainActivity.AddAppsBottomSheet
+import com.fedeveloper95.games.elements.MainActivity.CommunityBottomSheet
+import com.fedeveloper95.games.elements.MainActivity.DeletePopup
+import com.fedeveloper95.games.elements.MainActivity.Edit.EditAppBottomSheet
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.ExpressiveIconButton
 import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.AnimatedPlayButton
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 import com.fedeveloper95.games.elements.ui.HomeSearchBar
+import com.fedeveloper95.games.services.SettingsActivity.Updater
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -145,9 +139,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
     }
 
     var showAddSheet by remember { mutableStateOf(false) }
+    var showCommunitySheet by remember { mutableStateOf(false) }
     var gameToRemove by remember { mutableStateOf<GameApp?>(null) }
-    var isEditMode by remember { mutableStateOf(false) }
-    var showSaveDialog by remember { mutableStateOf(false) }
+    var gameToEdit by remember { mutableStateOf<GameApp?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
@@ -189,6 +183,13 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
             )
         )
     )
+
+    LaunchedEffect(currentVersionName) {
+        val lastVersion = prefs.getString("last_version", null)
+        if (lastVersion != currentVersionName) {
+            showCommunitySheet = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (autoUpdates.value) {
@@ -272,55 +273,22 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
     }
 
     val listState = rememberLazyListState()
-    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
-        if (searchQuery.isNotEmpty()) return@rememberReorderableLazyListState
-        val currentList = games.toMutableList()
-        val fromIndex = from.index
-        val toIndex = to.index
-
-        if (fromIndex in currentList.indices && toIndex in currentList.indices) {
-            val item = currentList.removeAt(fromIndex)
-            currentList.add(toIndex, item)
-            viewModel.updateGamesOrder(currentList)
-            if (sortType.value != "Custom") {
-                viewModel.switchToCustomSort(context)
-            }
-        }
-    }
-
     val gridState = rememberLazyGridState()
-    val reorderGridState = rememberReorderableLazyGridState(gridState) { from, to ->
-        if (searchQuery.isNotEmpty()) return@rememberReorderableLazyGridState
-        val currentList = games.toMutableList()
-        val fromIndex = from.index
-        val toIndex = to.index
-
-        if (fromIndex in currentList.indices && toIndex in currentList.indices) {
-            val item = currentList.removeAt(fromIndex)
-            currentList.add(toIndex, item)
-            viewModel.updateGamesOrder(currentList)
-            if (sortType.value != "Custom") {
-                viewModel.switchToCustomSort(context)
-            }
-        }
-    }
 
     LaunchedEffect(Unit) {
         if (games.isEmpty()) viewModel.loadGames(context)
     }
 
-    BackHandler(enabled = isEditMode || searchQuery.isNotEmpty()) {
+    BackHandler(enabled = searchQuery.isNotEmpty()) {
         if (searchQuery.isNotEmpty()) {
             searchQuery = ""
-        } else {
-            showSaveDialog = true
         }
     }
 
-    val currentViewType = remember(currentCardStyle.value, isEditMode) {
-        when {
-            currentCardStyle.value == "Horizontal" && !isEditMode -> ViewType.Pager
-            currentCardStyle.value == "Grid" -> ViewType.Grid
+    val currentViewType = remember(currentCardStyle.value) {
+        when (currentCardStyle.value) {
+            "Horizontal" -> ViewType.Pager
+            "Grid" -> ViewType.Grid
             else -> ViewType.List
         }
     }
@@ -341,120 +309,77 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                     .padding(top = 16.dp)
             ) {
                 val buttonsContent = @Composable {
-                    AnimatedContent(
-                        targetState = isEditMode,
-                        transitionSpec = { scaleIn() + fadeIn() togetherWith scaleOut() + fadeOut() },
-                        label = "actionAnim"
-                    ) { editMode ->
-                        if (editMode) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                ExpressiveIconButton(
-                                    onClick = { showSaveDialog = true },
-                                    icon = Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.discard),
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                ExpressiveIconButton(
-                                    onClick = {
-                                        viewModel.saveOrder(context)
-                                        isEditMode = false
-                                    },
-                                    icon = Icons.Default.Check,
-                                    contentDescription = stringResource(R.string.save),
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                ExpressiveIconButton(
-                                    onClick = { isEditMode = true },
-                                    icon = Icons.Default.Edit,
-                                    contentDescription = stringResource(R.string.edit_mode_title),
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                ExpressiveIconButton(
-                                    onClick = {
-                                        val intent = Intent(context, SettingsActivity::class.java)
-                                        context.startActivity(intent)
-                                    },
-                                    icon = Icons.Default.Settings,
-                                    contentDescription = stringResource(R.string.settings_title),
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ExpressiveIconButton(
+                            onClick = {
+                                val intent = Intent(context, EditModeActivity::class.java)
+                                context.startActivity(intent)
+                            },
+                            icon = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_mode_title),
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        ExpressiveIconButton(
+                            onClick = {
+                                val intent = Intent(context, SettingsActivity::class.java)
+                                context.startActivity(intent)
+                            },
+                            icon = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
 
-                if (isEditMode) {
+                if (showUserName.value) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.edit_mode_title),
-                            fontFamily = GoogleSansFlex,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
+                            text = "${userName.value}'s",
+                            style = TextStyle(
+                                fontFamily = customWelcomeFontFamily,
+                                fontSize = 28.sp
+                            ),
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         buttonsContent()
                     }
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        fontFamily = GoogleSansFlex,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 42.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        lineHeight = 48.sp,
+                        modifier = Modifier.offset(y = (-4).dp)
+                    )
                 } else {
-                    if (showUserName.value) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${userName.value}'s",
-                                style = TextStyle(
-                                    fontFamily = customWelcomeFontFamily,
-                                    fontSize = 28.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            buttonsContent()
-                        }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = stringResource(R.string.app_name),
                             fontFamily = GoogleSansFlex,
                             fontWeight = FontWeight.Bold,
                             fontSize = 42.sp,
                             color = MaterialTheme.colorScheme.primary,
-                            lineHeight = 48.sp,
-                            modifier = Modifier.offset(y = (-4).dp)
+                            lineHeight = 48.sp
                         )
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                fontFamily = GoogleSansFlex,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 42.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                                lineHeight = 48.sp
-                            )
-                            buttonsContent()
-                        }
+                        buttonsContent()
                     }
                 }
             }
 
             androidx.compose.animation.AnimatedVisibility(
-                visible = !isEditMode,
+                visible = true,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
@@ -523,8 +448,8 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                             AnimatedContent(
                                 targetState = currentViewType,
                                 transitionSpec = {
-                                    fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.95f, animationSpec = tween(300)) togetherWith
-                                            fadeOut(animationSpec = tween(300))
+                                    fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.95f, animationSpec = tween(200)) togetherWith
+                                            fadeOut(animationSpec = tween(200))
                                 },
                                 label = "mainContentAnim"
                             ) { viewType ->
@@ -537,11 +462,11 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                             gameToRemove = gameToRemove,
                                             onLaunch = launchGame,
                                             onStoreClick = { openPlayStore(it.packageName) },
-                                            onDelete = { gameToRemove = it }
+                                            onDelete = { gameToRemove = it },
+                                            onEditApp = { gameToEdit = it }
                                         )
                                     }
                                     ViewType.Grid -> {
-                                        val gridShape = remember { RoundedCornerShape(24.dp) }
                                         LazyVerticalGrid(
                                             state = gridState,
                                             columns = GridCells.Fixed(2),
@@ -551,47 +476,21 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                             modifier = Modifier.fillMaxSize()
                                         ) {
                                             items(displayGames, key = { it.packageName }) { game ->
-                                                ReorderableItem(reorderGridState, key = game.packageName) { isDragging ->
-                                                    val elevation = animateDpAsState(if (isDragging) 12.dp else 0.dp)
-                                                    val scale = animateFloatAsState(if (isDragging) 1.05f else 1f)
-
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .aspectRatio(1f)
-                                                            .graphicsLayer {
-                                                                scaleX = scale.value
-                                                                scaleY = scale.value
-                                                                shadowElevation = elevation.value.toPx()
-                                                                shape = gridShape
-                                                                clip = false
-                                                            }
-                                                    ) {
-                                                        if (!isEditMode) {
-                                                            SwipeableGameContainer(
-                                                                item = game,
-                                                                isDeleteCandidate = gameToRemove?.packageName == game.packageName,
-                                                                showLaunchCount = showLaunchCount.value,
-                                                                showPlayTime = showPlayTime.value,
-                                                                onDelete = { gameToRemove = game }
-                                                            ) {
-                                                                GridGameCard(
-                                                                    game = game,
-                                                                    isEditMode = false,
-                                                                    onLaunch = { launchGame(game) }
-                                                                )
-                                                            }
-                                                        } else {
-                                                            GridGameCard(
-                                                                game = game,
-                                                                isEditMode = true,
-                                                                onLaunch = {},
-                                                                dragHandleModifier = Modifier.draggableHandle()
-                                                            )
-                                                        }
-                                                    }
+                                                SwipeableGameContainer(
+                                                    item = game,
+                                                    isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                    showLaunchCount = showLaunchCount.value,
+                                                    showPlayTime = showPlayTime.value,
+                                                    onDelete = { gameToRemove = game }
+                                                ) {
+                                                    GridGameCard(
+                                                        game = game,
+                                                        onLaunch = { launchGame(game) },
+                                                        onLongClick = { gameToEdit = game }
+                                                    )
                                                 }
                                             }
-                                            if (!isEditMode && searchQuery.isEmpty() && showGetMoreGames.value) {
+                                            if (searchQuery.isEmpty() && showGetMoreGames.value) {
                                                 item(span = { GridItemSpan(maxLineSpan) }) {
                                                     GetMoreGamesCard(context)
                                                 }
@@ -599,59 +498,29 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                         }
                                     }
                                     ViewType.List -> {
-                                        val listShape = remember { RoundedCornerShape(28.dp) }
                                         LazyColumn(
                                             state = listState,
                                             contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
                                             verticalArrangement = Arrangement.spacedBy(16.dp),
                                             modifier = Modifier.fillMaxSize()
                                         ) {
-                                            itemsIndexed(items = displayGames, key = { _, item -> item.packageName }) { index, game ->
-                                                ReorderableItem(reorderState, key = game.packageName) { isDragging ->
-                                                    val elevation = animateDpAsState(if (isDragging) 16.dp else 0.dp)
-                                                    val scale = animateFloatAsState(if (isDragging) 1.05f else 1f)
-
-                                                    if (!isEditMode) {
-                                                        SwipeableGameContainer(
-                                                            item = game,
-                                                            isDeleteCandidate = gameToRemove?.packageName == game.packageName,
-                                                            showLaunchCount = showLaunchCount.value,
-                                                            showPlayTime = showPlayTime.value,
-                                                            onDelete = { gameToRemove = game }
-                                                        ) {
-                                                            GameListItem(
-                                                                game = game,
-                                                                isEditMode = false,
-                                                                onLaunch = { launchGame(game) },
-                                                                onStoreClick = { openPlayStore(game.packageName) }
-                                                            )
-                                                        }
-                                                    } else {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .graphicsLayer {
-                                                                    scaleX = scale.value
-                                                                    scaleY = scale.value
-                                                                    shadowElevation = elevation.value.toPx()
-                                                                    shape = listShape
-                                                                    clip = false
-                                                                }
-                                                                .background(MaterialTheme.colorScheme.background)
-                                                        ) {
-                                                            GameListItem(
-                                                                game = game,
-                                                                isEditMode = true,
-                                                                onLaunch = {},
-                                                                onStoreClick = {},
-                                                                isDragging = isDragging,
-                                                                dragHandleModifier = Modifier.draggableHandle()
-                                                            )
-                                                        }
-                                                    }
+                                            itemsIndexed(items = displayGames, key = { _, item -> item.packageName }) { _, game ->
+                                                SwipeableGameContainer(
+                                                    item = game,
+                                                    isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                    showLaunchCount = showLaunchCount.value,
+                                                    showPlayTime = showPlayTime.value,
+                                                    onDelete = { gameToRemove = game }
+                                                ) {
+                                                    GameListItem(
+                                                        game = game,
+                                                        onLaunch = { launchGame(game) },
+                                                        onStoreClick = { openPlayStore(game.packageName) },
+                                                        onLongClick = { gameToEdit = game }
+                                                    )
                                                 }
                                             }
-                                            if (!isEditMode && searchQuery.isEmpty() && showGetMoreGames.value) {
+                                            if (searchQuery.isEmpty() && showGetMoreGames.value) {
                                                 item { GetMoreGamesCard(context) }
                                             }
                                         }
@@ -663,9 +532,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                 }
 
                 androidx.compose.animation.AnimatedVisibility(
-                    visible = !isEditMode && searchQuery.isEmpty(),
-                    enter = scaleIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-                    exit = scaleOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
+                    visible = searchQuery.isEmpty(),
+                    enter = scaleIn(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
+                    exit = scaleOut(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200)),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 48.dp)
@@ -682,68 +551,6 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
         }
     }
 
-    if (showSaveDialog) {
-        val interactionSource = remember { MutableInteractionSource() }
-        val isPressed by interactionSource.collectIsPressedAsState()
-        val cornerPercent by animateIntAsState(
-            targetValue = if (isPressed) 15 else 50,
-            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            label = "btnMorph"
-        )
-
-        AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.save_order_title),
-                    fontFamily = GoogleSansFlex,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.save_order_description),
-                    fontFamily = GoogleSansFlex
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.saveOrder(context)
-                        isEditMode = false
-                        showSaveDialog = false
-                    },
-                    shape = RoundedCornerShape(cornerPercent),
-                    interactionSource = interactionSource,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Text(
-                        text = stringResource(R.string.save),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    viewModel.loadGames(context)
-                    isEditMode = false
-                    showSaveDialog = false
-                }) {
-                    Text(
-                        text = stringResource(R.string.discard),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        )
-    }
-
     if (gameToRemove != null) {
         DeletePopup(
             game = gameToRemove!!,
@@ -752,6 +559,13 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                 gameToRemove = null
             },
             onDismiss = { gameToRemove = null }
+        )
+    }
+
+    if (gameToEdit != null) {
+        EditAppBottomSheet(
+            game = gameToEdit!!,
+            onDismiss = { gameToEdit = null }
         )
     }
 
@@ -765,8 +579,16 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
             }
         )
     }
-}
 
+    if (showCommunitySheet) {
+        CommunityBottomSheet(
+            onDismiss = {
+                showCommunitySheet = false
+                prefs.edit().putString("last_version", currentVersionName).apply()
+            }
+        )
+    }
+}
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -778,6 +600,7 @@ fun HorizontalGamePager(
     onLaunch: (GameApp) -> Unit,
     onStoreClick: (GameApp) -> Unit,
     onDelete: (GameApp) -> Unit,
+    onEditApp: (GameApp) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { games.size })
@@ -812,7 +635,8 @@ fun HorizontalGamePager(
             HorizontalGameCard(
                 game = game,
                 onLaunch = { onLaunch(game) },
-                onStoreClick = { onStoreClick(game) }
+                onStoreClick = { onStoreClick(game) },
+                onLongClick = { onEditApp(game) }
             )
         }
     }
@@ -823,29 +647,17 @@ fun HorizontalGamePager(
 fun HorizontalGameCard(
     game: GameApp,
     onLaunch: () -> Unit,
-    onStoreClick: () -> Unit
+    onStoreClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scaleFactor by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-        label = "scale"
-    )
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.72f)
-            .graphicsLayer {
-                scaleX = scaleFactor
-                scaleY = scaleFactor
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                onClick = onLaunch
+            .clip(RoundedCornerShape(32.dp))
+            .combinedClickable(
+                onClick = onLaunch,
+                onLongClick = onLongClick
             ),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(
@@ -862,6 +674,7 @@ fun HorizontalGameCard(
         ) {
             AppIcon(
                 packageName = game.packageName,
+                customIconUri = game.customIconUri,
                 modifier = Modifier
                     .size(140.dp)
                     .shadow(12.dp, CircleShape)
@@ -902,38 +715,22 @@ fun HorizontalGameCard(
 @Composable
 fun GridGameCard(
     game: GameApp,
-    isEditMode: Boolean,
     onLaunch: () -> Unit,
-    dragHandleModifier: Modifier = Modifier
+    onLongClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scaleFactor by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-        label = "scale"
-    )
-
     Card(
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer {
-                scaleX = scaleFactor
-                scaleY = scaleFactor
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                onClick = { if(!isEditMode) onLaunch() },
-                enabled = !isEditMode
+            .clip(RoundedCornerShape(24.dp))
+            .combinedClickable(
+                onClick = onLaunch,
+                onLongClick = onLongClick
             ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        border = if (isEditMode) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)) else null
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -945,6 +742,7 @@ fun GridGameCard(
             ) {
                 AppIcon(
                     packageName = game.packageName,
+                    customIconUri = game.customIconUri,
                     modifier = Modifier
                         .size(64.dp)
                         .clip(RoundedCornerShape(16.dp))
@@ -961,18 +759,6 @@ fun GridGameCard(
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            if (isEditMode) {
-                Icon(
-                    Icons.Default.DragHandle,
-                    contentDescription = "Drag",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = dragHandleModifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(24.dp)
                 )
             }
         }
@@ -1009,7 +795,7 @@ fun SwipeableGameContainer(
 
     LaunchedEffect(isDeleteCandidate) {
         if (!isDeleteCandidate && offset.value > 0f) {
-            offset.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+            offset.animateTo(0f, tween(200))
         }
     }
 
@@ -1038,12 +824,12 @@ fun SwipeableGameContainer(
                     if (currentVal > 0) {
                         if (currentVal > limit * 0.5f) {
                             scope.launch {
-                                offset.animateTo(limit, spring(stiffness = Spring.StiffnessMedium))
+                                offset.animateTo(limit, tween(200))
                                 onDelete()
                             }
                         } else {
                             scope.launch {
-                                offset.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+                                offset.animateTo(0f, tween(200))
                             }
                         }
                     }
@@ -1052,11 +838,11 @@ fun SwipeableGameContainer(
 
                         if (currentVal < -(limit * 0.2f)) {
                             scope.launch {
-                                offset.animateTo(target, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium))
+                                offset.animateTo(target, tween(200))
                             }
                         } else {
                             scope.launch {
-                                offset.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+                                offset.animateTo(0f, tween(200))
                             }
                         }
                     }
@@ -1067,7 +853,7 @@ fun SwipeableGameContainer(
             content = {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
+                        .clip(RoundedCornerShape(24.dp))
                         .background(deleteBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1081,7 +867,7 @@ fun SwipeableGameContainer(
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
+                        .clip(RoundedCornerShape(24.dp))
                         .background(statsBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1166,41 +952,24 @@ fun SwipeableGameContainer(
 @Composable
 fun GameListItem(
     game: GameApp,
-    isEditMode: Boolean,
     onLaunch: () -> Unit,
     onStoreClick: () -> Unit,
-    isDragging: Boolean = false,
-    dragHandleModifier: Modifier = Modifier
+    onLongClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scaleFactor by animateFloatAsState(
-        targetValue = if (isEditMode || isDragging) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-        label = "scale"
-    )
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(104.dp)
-            .graphicsLayer {
-                scaleX = scaleFactor
-                scaleY = scaleFactor
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
+            .clip(RoundedCornerShape(28.dp))
+            .combinedClickable(
                 onClick = onLaunch,
-                enabled = !isEditMode
+                onLongClick = onLongClick
             ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isEditMode || isDragging) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 8.dp else 0.dp),
-        border = if (isEditMode) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)) else null
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
@@ -1208,6 +977,7 @@ fun GameListItem(
         ) {
             AppIcon(
                 packageName = game.packageName,
+                customIconUri = game.customIconUri,
                 modifier = Modifier
                     .size(68.dp)
                     .clip(RoundedCornerShape(22.dp))
@@ -1222,24 +992,15 @@ fun GameListItem(
                 )
             }
 
-            if (isEditMode) {
+            IconButton(onClick = onStoreClick) {
                 Icon(
-                    Icons.Default.DragHandle,
-                    contentDescription = "Drag",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = dragHandleModifier
+                    imageVector = Icons.Outlined.ShoppingBag,
+                    contentDescription = "Store Page",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            } else {
-                IconButton(onClick = onStoreClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.ShoppingBag,
-                        contentDescription = "Store Page",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                AnimatedPlayButton(onClick = onLaunch)
             }
+            Spacer(modifier = Modifier.width(4.dp))
+            AnimatedPlayButton(onClick = onLaunch)
         }
     }
 }
@@ -1251,7 +1012,7 @@ fun GetMoreGamesCard(context: Context) {
 
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = tween(200),
         label = "btnMorph"
     )
 

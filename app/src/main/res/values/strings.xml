@@ -153,4 +153,10 @@
     <string name="export_success">Settings exported successfully</string>
     <string name="export_error">Error exporting settings</string>
     <string name="import_error">Error importing settings</string>
+
+    <string name="community_title">Join the community</string>
+    <string name="community_desc">Join my Telegram channel to not miss the latest news and updates on my projects, along with some exclusive sneak peeks!</string>
+    <string name="no_thanks">No, thanks</string>
+    <string name="sure_action">Sure!</string>
+
 </resources>

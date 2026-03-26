@@ -50,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fedeveloper95.games.R
-import com.fedeveloper95.games.components.mainactivity.GameApp
+import com.fedeveloper95.games.services.mainactivity.GameApp
 import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 
