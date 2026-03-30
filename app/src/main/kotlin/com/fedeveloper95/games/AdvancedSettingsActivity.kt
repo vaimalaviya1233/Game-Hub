@@ -1,5 +1,6 @@
 package com.fedeveloper95.games
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -8,6 +9,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,16 +25,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,6 +65,7 @@ import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.RestartPopup
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.exportSettings
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.importSettings
+import com.fedeveloper95.games.elements.MainActivity.CommunityBottomSheet
 
 class AdvancedSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +92,8 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
     var autoUpdates by remember { mutableStateOf(prefs.getBoolean(PREF_AUTO_UPDATES, true)) }
     var showRestartDialog by remember { mutableStateOf(false) }
+    var showCommunitySheet by remember { mutableStateOf(false) }
+    var showResetPopup by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let {
@@ -206,10 +222,164 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                     importLauncher.launch(arrayOf("application/json"))
                 }
             )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = stringResource(R.string.settings_testing_header),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontFamily = GoogleSansFlex,
+                    fontWeight = FontWeight.Normal
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+
+            SettingsItemCard(
+                icon = Icons.Default.Group,
+                title = stringResource(R.string.settings_test_telegram_title),
+                subtitle = stringResource(R.string.settings_test_telegram_desc),
+                containerColor = Color(0xFF97cbff),
+                iconColor = Color(0xFF003355),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                onClick = {
+                    showCommunitySheet = true
+                }
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            SettingsItemCard(
+                icon = Icons.Default.BugReport,
+                title = stringResource(R.string.settings_test_crash_title),
+                subtitle = stringResource(R.string.settings_test_crash_desc),
+                containerColor = Color(0xFFffb869),
+                iconColor = Color(0xFF5c3000),
+                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
+                onClick = {
+                    throw RuntimeException("Test Crash Triggered")
+                }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = stringResource(R.string.settings_danger_zone_header),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontFamily = GoogleSansFlex,
+                    fontWeight = FontWeight.Normal
+                ),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+
+            SettingsItemCard(
+                icon = Icons.Default.DeleteForever,
+                title = stringResource(R.string.settings_reset_title),
+                subtitle = stringResource(R.string.settings_reset_desc),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                iconColor = MaterialTheme.colorScheme.onErrorContainer,
+                shape = RoundedCornerShape(20.dp),
+                onClick = {
+                    showResetPopup = true
+                }
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+
+    if (showCommunitySheet) {
+        CommunityBottomSheet(
+            onDismiss = { showCommunitySheet = false }
+        )
+    }
+
+    if (showResetPopup) {
+        ResetPopup(
+            onDismiss = { showResetPopup = false },
+            onConfirm = {
+                showResetPopup = false
+                val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                activityManager.clearApplicationUserData()
+            }
+        )
     }
 
     if (showRestartDialog) {
         RestartPopup(onDismiss = { showRestartDialog = false })
     }
+}
+
+@Composable
+fun ResetPopup(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val cornerPercent by animateIntAsState(
+        targetValue = if (isPressed) 15 else 50,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "btnMorph"
+    )
+
+    val textInteractionSource = remember { MutableInteractionSource() }
+    val textIsPressed by textInteractionSource.collectIsPressedAsState()
+    val textCornerPercent by animateIntAsState(
+        targetValue = if (textIsPressed) 15 else 50,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "txtBtnMorph"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.settings_reset_title),
+                fontFamily = GoogleSansFlex,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.settings_reset_confirmation_desc),
+                fontFamily = GoogleSansFlex
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                shape = RoundedCornerShape(cornerPercent),
+                interactionSource = interactionSource,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_reset_action),
+                    fontFamily = GoogleSansFlex,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(textCornerPercent),
+                interactionSource = textInteractionSource,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+            ) {
+                Text(
+                    text = stringResource(R.string.cancel),
+                    fontFamily = GoogleSansFlex,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(32.dp),
+        tonalElevation = 6.dp
+    )
 }

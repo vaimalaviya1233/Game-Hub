@@ -170,4 +170,14 @@
     <string name="edit_restore_title">Restore title</string>
     <string name="edit_app_name">App name</string>
     <string name="select_app_title">Select App</string>
+    <string name="settings_testing_header">Testing</string>
+    <string name="settings_test_telegram_title">Community</string>
+    <string name="settings_test_telegram_desc">Join our Telegram group</string>
+    <string name="settings_test_crash_title">Test Crash</string>
+    <string name="settings_test_crash_desc">Force a crash to test error reporting</string>
+    <string name="settings_danger_zone_header">Danger Zone</string>
+    <string name="settings_reset_title">Factory Reset</string>
+    <string name="settings_reset_desc">Delete all data and restore default settings</string>
+    <string name="settings_reset_confirmation_desc">Are you sure you want to reset the app? All your saved games, customizations, and settings will be permanently deleted. This action cannot be undone.</string>
+    <string name="settings_reset_action">Reset App</string>
 </resources>
