@@ -162,5 +162,12 @@
     <string name="check_updates_action">Check for updates</string>
     <string name="update_error_check">Unable to check for updates</string>
     <string name="cancel_action">Cancel</string>
-
+    <string name="edit_app_icon_title">Choose Icon</string>
+    <string name="edit_app_icons">App icons</string>
+    <string name="edit_builtin_icons">Built-in icons</string>
+    <string name="edit_gallery">Gallery</string>
+    <string name="edit_restore_icon">Restore icon</string>
+    <string name="edit_restore_title">Restore title</string>
+    <string name="edit_app_name">App name</string>
+    <string name="select_app_title">Select App</string>
 </resources>

@@ -49,6 +49,18 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Casino
+import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.Explore
+import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.RocketLaunch
+import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.VideogameAsset
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -88,7 +100,6 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 import com.fedeveloper95.games.services.mainactivity.GameApp
 import com.fedeveloper95.games.services.mainactivity.GameViewModel
 import com.fedeveloper95.games.services.mainactivity.formatPlayTime
@@ -616,6 +627,62 @@ fun AnimatedShopButton(onClick: () -> Unit) {
     }
 }
 
+private fun Color.darken(factor: Float = 0.8f): Color {
+    return Color(
+        red = this.red * factor,
+        green = this.green * factor,
+        blue = this.blue * factor,
+        alpha = this.alpha
+    )
+}
+
+@Composable
+fun GameIconDisplay(game: GameApp, modifier: Modifier = Modifier) {
+    val customIconUri = game.customIconUri
+    val isBuiltIn = customIconUri?.startsWith("builtin://") == true
+
+    if (isBuiltIn) {
+        val uriStr = customIconUri!!
+        val name = uriStr.substringAfter("builtin://").substringBefore("#")
+        val colorHex = uriStr.substringAfter("#").toIntOrNull() ?: 0
+        val color = if (colorHex != 0) Color(colorHex) else MaterialTheme.colorScheme.primary
+
+        val iconVector = when(name) {
+            "star" -> Icons.Rounded.Star
+            "controller" -> Icons.Rounded.SportsEsports
+            "bolt" -> Icons.Rounded.Bolt
+            "heart" -> Icons.Rounded.Favorite
+            "gamepad" -> Icons.Rounded.Gamepad
+            "videogame" -> Icons.Rounded.VideogameAsset
+            "toy" -> Icons.Rounded.SmartToy
+            "puzzle" -> Icons.Rounded.Extension
+            "dice" -> Icons.Rounded.Casino
+            "rocket" -> Icons.Rounded.RocketLaunch
+            "trophy" -> Icons.Rounded.EmojiEvents
+            "explore" -> Icons.Rounded.Explore
+            else -> Icons.Rounded.Gamepad
+        }
+
+        Box(
+            modifier = modifier.background(color),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                tint = color.darken(0.5f),
+                modifier = Modifier.fillMaxSize(0.56f)
+            )
+        }
+    } else {
+        AppIcon(
+            packageName = game.packageName,
+            customIconUri = customIconUri,
+            modifier = modifier
+        )
+    }
+}
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun HorizontalGamePager(
@@ -698,9 +765,8 @@ fun HorizontalGameCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            AppIcon(
-                packageName = game.packageName,
-                customIconUri = game.customIconUri,
+            GameIconDisplay(
+                game = game,
                 modifier = Modifier
                     .size(140.dp)
                     .shadow(12.dp, CircleShape)
@@ -760,12 +826,11 @@ fun GridGameCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                AppIcon(
-                    packageName = game.packageName,
-                    customIconUri = game.customIconUri,
+                GameIconDisplay(
+                    game = game,
                     modifier = Modifier
                         .size(64.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(CircleShape)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -995,12 +1060,11 @@ fun GameListItem(
             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppIcon(
-                packageName = game.packageName,
-                customIconUri = game.customIconUri,
+            GameIconDisplay(
+                game = game,
                 modifier = Modifier
                     .size(68.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(CircleShape)
             )
             Spacer(modifier = Modifier.width(24.dp))
             Column(modifier = Modifier.weight(1f)) {

@@ -4,9 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -19,8 +18,13 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Casino
+import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.Explore
+import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Star
@@ -37,6 +41,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fedeveloper95.games.R
@@ -44,6 +49,7 @@ import com.fedeveloper95.games.services.mainactivity.GameApp
 import com.fedeveloper95.games.services.mainactivity.GameViewModel
 import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -54,6 +60,7 @@ fun EditAppBottomSheet(
 ) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     var customName by remember { mutableStateOf(game.customName ?: game.name) }
     var customIconUri by remember { mutableStateOf<String?>(game.customIconUri) }
@@ -91,7 +98,7 @@ fun EditAppBottomSheet(
     val isPressed by interactionSource.collectIsPressedAsState()
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = tween(durationMillis = 200),
         label = "btnMorph"
     )
 
@@ -132,7 +139,12 @@ fun EditAppBottomSheet(
                     "gamepad" -> Icons.Rounded.Gamepad
                     "videogame" -> Icons.Rounded.VideogameAsset
                     "toy" -> Icons.Rounded.SmartToy
-                    else -> Icons.Rounded.Star
+                    "puzzle" -> Icons.Rounded.Extension
+                    "dice" -> Icons.Rounded.Casino
+                    "rocket" -> Icons.Rounded.RocketLaunch
+                    "trophy" -> Icons.Rounded.EmojiEvents
+                    "explore" -> Icons.Rounded.Explore
+                    else -> Icons.Rounded.Gamepad
                 }
 
                 Box(
@@ -161,13 +173,16 @@ fun EditAppBottomSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val options = listOf("App icons", "Built-in icons", "Galleria")
+            val options = listOf(
+                stringResource(R.string.edit_app_icons),
+                stringResource(R.string.edit_builtin_icons),
+                stringResource(R.string.edit_gallery)
+            )
             val icons = listOf(Icons.Outlined.Apps, Icons.Outlined.Category, Icons.Outlined.Image)
 
-            FlowRow(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 options.forEachIndexed { index, label ->
                     val shape = when (index) {
@@ -187,7 +202,9 @@ fun EditAppBottomSheet(
                             }
                         },
                         shapes = ToggleButtonDefaults.shapes(shape = shape),
-                        modifier = Modifier.semantics { role = Role.RadioButton }
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { role = Role.RadioButton }
                     ) {
                         Icon(
                             imageVector = icons[index],
@@ -195,7 +212,12 @@ fun EditAppBottomSheet(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
-                        Text(label, fontFamily = GoogleSansFlex)
+                        Text(
+                            text = label,
+                            fontFamily = GoogleSansFlex,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -224,7 +246,7 @@ fun EditAppBottomSheet(
                         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
-                    Text("Ripristina icona", fontFamily = GoogleSansFlex)
+                    Text(stringResource(R.string.edit_restore_icon), fontFamily = GoogleSansFlex)
                 }
 
                 Button(
@@ -240,7 +262,7 @@ fun EditAppBottomSheet(
                         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
-                    Text("Ripristina titolo", fontFamily = GoogleSansFlex)
+                    Text(stringResource(R.string.edit_restore_title), fontFamily = GoogleSansFlex)
                 }
             }
 
@@ -251,16 +273,11 @@ fun EditAppBottomSheet(
                 onValueChange = { customName = it },
                 label = {
                     Text(
-                        text = "Nome dell'app",
+                        text = stringResource(R.string.edit_app_name),
                         fontFamily = GoogleSansFlex
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                ),
                 singleLine = true
             )
 
@@ -269,7 +286,10 @@ fun EditAppBottomSheet(
             Button(
                 onClick = {
                     viewModel.updateCustomGameData(context, game.packageName, customName, customIconUri)
-                    onDismiss()
+                    scope.launch {
+                        sheetState.hide()
+                        onDismiss()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -307,13 +327,26 @@ fun EditAppBottomSheet(
     }
 
     if (showBuiltInIconSelector) {
+        val currentIconName = if (customIconUri?.startsWith("builtin://") == true) {
+            customIconUri!!.substringAfter("builtin://").substringBefore("#")
+        } else {
+            "default"
+        }
+        val currentColor = if (customIconUri?.startsWith("builtin://") == true) {
+            customIconUri!!.substringAfter("#").toIntOrNull() ?: 0
+        } else {
+            0
+        }
+
         IconSelector(
+            currentIcon = currentIconName,
+            currentColor = currentColor,
             onDismiss = {
                 showBuiltInIconSelector = false
                 if (customIconUri == null) selectedOption = -1
             },
-            onIconSelected = { uri, _ ->
-                customIconUri = uri
+            onIconSelected = { name, color ->
+                customIconUri = "builtin://$name#$color"
                 showBuiltInIconSelector = false
             }
         )

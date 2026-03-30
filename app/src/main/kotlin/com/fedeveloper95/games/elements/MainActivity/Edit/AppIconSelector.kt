@@ -38,6 +38,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.fedeveloper95.games.R
 import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -61,6 +63,7 @@ fun AppIconSelector(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val packageManager = context.packageManager
 
@@ -94,7 +97,7 @@ fun AppIconSelector(
                 .padding(bottom = 16.dp)
         ) {
             Text(
-                text = "Select App",
+                text = stringResource(R.string.select_app_title),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontFamily = GoogleSansFlex,
                     fontWeight = FontWeight.Bold
@@ -163,7 +166,12 @@ fun AppIconSelector(
                             packageName = app.first,
                             appName = app.second,
                             shape = shape,
-                            onSelect = { onAppSelected(app.first) }
+                            onSelect = {
+                                scope.launch {
+                                    sheetState.hide()
+                                    onAppSelected(app.first)
+                                }
+                            }
                         )
                     }
                 }

@@ -38,6 +38,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import com.fedeveloper95.games.R
 import com.fedeveloper95.games.services.mainactivity.GameApp
 import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -63,6 +65,7 @@ fun AddAppsBottomSheet(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     val filteredApps = remember(searchQuery, allApps) {
@@ -154,7 +157,12 @@ fun AddAppsBottomSheet(
                             else -> RoundedCornerShape(4.dp)
                         }
 
-                        GroupedAppItem(app = app, shape = shape, onAdd = { onAdd(app.packageName) })
+                        GroupedAppItem(app = app, shape = shape, onAdd = {
+                            scope.launch {
+                                sheetState.hide()
+                                onAdd(app.packageName)
+                            }
+                        })
                     }
                 }
             }
