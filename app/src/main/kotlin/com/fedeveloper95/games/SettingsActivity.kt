@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -115,6 +116,8 @@ const val PREF_STATS_INTERVAL = "pref_stats_interval"
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isExpandedScreen = configuration.screenWidthDp >= 600
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
 
     var currentTheme by remember { mutableIntStateOf(prefs.getInt(PREF_THEME, THEME_SYSTEM)) }
@@ -187,9 +190,11 @@ fun SettingsScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(top = padding.calculateTopPadding())
+                .then(if (isExpandedScreen) Modifier.padding(horizontal = 64.dp) else Modifier)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp)
+                .padding(top = 8.dp, bottom = padding.calculateBottomPadding() + 48.dp)
         ) {
             Text(
                 text = stringResource(R.string.settings_header_appearance),
@@ -527,8 +532,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     context.startActivity(intent)
                 }
             )
-
-            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 

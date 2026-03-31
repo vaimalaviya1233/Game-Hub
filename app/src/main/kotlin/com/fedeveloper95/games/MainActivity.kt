@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
@@ -72,10 +73,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -95,6 +98,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -138,6 +143,9 @@ enum class ViewType { Pager, Grid, List }
 @Composable
 fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isExpandedScreen = configuration.screenWidthDp >= 600
+
     val games by viewModel.games.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
@@ -255,8 +263,17 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
         }
     }
 
-    LaunchedEffect(LocalLifecycleOwner.current.lifecycle) {
-        viewModel.loadGames(context)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadGames(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     val displayGames = remember(games, searchQuery) {
@@ -285,10 +302,6 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
 
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
-
-    LaunchedEffect(Unit) {
-        if (games.isEmpty()) viewModel.loadGames(context)
-    }
 
     BackHandler(enabled = searchQuery.isNotEmpty()) {
         if (searchQuery.isNotEmpty()) {
@@ -327,6 +340,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = padding.calculateTopPadding())
+                .then(if (isExpandedScreen) Modifier.padding(horizontal = 64.dp) else Modifier)
         ) {
             Column(
                 modifier = Modifier
@@ -495,7 +509,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                     ViewType.Grid -> {
                                         LazyVerticalGrid(
                                             state = gridState,
-                                            columns = GridCells.Fixed(2),
+                                            columns = if (isExpandedScreen) GridCells.Adaptive(160.dp) else GridCells.Fixed(2),
                                             contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
                                             verticalArrangement = Arrangement.spacedBy(16.dp),
                                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -507,7 +521,8 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                     isDeleteCandidate = gameToRemove?.packageName == game.packageName,
                                                     showLaunchCount = showLaunchCount.value,
                                                     showPlayTime = showPlayTime.value,
-                                                    onDelete = { gameToRemove = game }
+                                                    onDelete = { gameToRemove = game },
+                                                    shape = RoundedCornerShape(24.dp)
                                                 ) {
                                                     GridGameCard(
                                                         game = game,
@@ -524,30 +539,89 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                         }
                                     }
                                     ViewType.List -> {
-                                        LazyColumn(
-                                            state = listState,
-                                            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
-                                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            itemsIndexed(items = displayGames, key = { _, item -> item.packageName }) { _, game ->
-                                                SwipeableGameContainer(
-                                                    item = game,
-                                                    isDeleteCandidate = gameToRemove?.packageName == game.packageName,
-                                                    showLaunchCount = showLaunchCount.value,
-                                                    showPlayTime = showPlayTime.value,
-                                                    onDelete = { gameToRemove = game }
-                                                ) {
-                                                    GameListItem(
-                                                        game = game,
-                                                        onLaunch = { launchGame(game) },
-                                                        onStoreClick = { openPlayStore(game.packageName) },
-                                                        onLongClick = { gameToEdit = game }
-                                                    )
+                                        if (isExpandedScreen) {
+                                            LazyVerticalGrid(
+                                                columns = GridCells.Adaptive(minSize = 340.dp),
+                                                contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
+                                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                                modifier = Modifier.fillMaxSize()
+                                            ) {
+                                                items(items = displayGames, key = { it.packageName }) { game ->
+                                                    val shape = RoundedCornerShape(28.dp)
+                                                    SwipeableGameContainer(
+                                                        item = game,
+                                                        isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                        showLaunchCount = showLaunchCount.value,
+                                                        showPlayTime = showPlayTime.value,
+                                                        onDelete = { gameToRemove = game },
+                                                        shape = shape
+                                                    ) {
+                                                        GameListItem(
+                                                            game = game,
+                                                            isSingle = true,
+                                                            isFirst = true,
+                                                            isLast = true,
+                                                            onLaunch = { launchGame(game) },
+                                                            onStoreClick = { openPlayStore(game.packageName) },
+                                                            onLongClick = { gameToEdit = game }
+                                                        )
+                                                    }
+                                                }
+                                                if (searchQuery.isEmpty() && showGetMoreGames.value) {
+                                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                                        Spacer(modifier = Modifier.height(12.dp))
+                                                        GetMoreGamesCard(context)
+                                                    }
                                                 }
                                             }
-                                            if (searchQuery.isEmpty() && showGetMoreGames.value) {
-                                                item { GetMoreGamesCard(context) }
+                                        } else {
+                                            LazyColumn(
+                                                state = listState,
+                                                contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
+                                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                                modifier = Modifier.fillMaxSize()
+                                            ) {
+                                                itemsIndexed(items = displayGames, key = { _, item -> item.packageName }) { index, game ->
+                                                    val shape = when {
+                                                        displayGames.size == 1 -> RoundedCornerShape(28.dp)
+                                                        index == 0 -> RoundedCornerShape(
+                                                            topStart = 28.dp,
+                                                            topEnd = 28.dp,
+                                                            bottomStart = 4.dp,
+                                                            bottomEnd = 4.dp
+                                                        )
+                                                        index == displayGames.size - 1 -> RoundedCornerShape(
+                                                            topStart = 4.dp,
+                                                            topEnd = 4.dp,
+                                                            bottomStart = 28.dp,
+                                                            bottomEnd = 28.dp
+                                                        )
+                                                        else -> RoundedCornerShape(4.dp)
+                                                    }
+
+                                                    SwipeableGameContainer(
+                                                        item = game,
+                                                        isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                        showLaunchCount = showLaunchCount.value,
+                                                        showPlayTime = showPlayTime.value,
+                                                        onDelete = { gameToRemove = game },
+                                                        shape = shape
+                                                    ) {
+                                                        GameListItem(
+                                                            game = game,
+                                                            isSingle = displayGames.size == 1,
+                                                            isFirst = index == 0,
+                                                            isLast = index == displayGames.size - 1,
+                                                            onLaunch = { launchGame(game) },
+                                                            onStoreClick = { openPlayStore(game.packageName) },
+                                                            onLongClick = { gameToEdit = game }
+                                                        )
+                                                    }
+                                                }
+                                                if (searchQuery.isEmpty() && showGetMoreGames.value) {
+                                                    item { Spacer(modifier = Modifier.height(12.dp)); GetMoreGamesCard(context) }
+                                                }
                                             }
                                         }
                                     }
@@ -859,6 +933,7 @@ fun SwipeableGameContainer(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     orientation: Orientation = Orientation.Horizontal,
+    shape: Shape = RoundedCornerShape(24.dp),
     content: @Composable () -> Unit
 ) {
     var limit by remember { mutableFloatStateOf(0f) }
@@ -878,8 +953,12 @@ fun SwipeableGameContainer(
     val canSwipeStats = showLaunchCount || showPlayTime
     val isVertical = orientation == Orientation.Vertical
 
+    val bgShape = RoundedCornerShape(28.dp)
+
     LaunchedEffect(isDeleteCandidate) {
-        if (!isDeleteCandidate && offset.value > 0f) {
+        if (!isDeleteCandidate && offset.value < 0f && isVertical) {
+            offset.animateTo(0f, tween(200))
+        } else if (!isDeleteCandidate && offset.value > 0f && !isVertical) {
             offset.animateTo(0f, tween(200))
         }
     }
@@ -895,8 +974,17 @@ fun SwipeableGameContainer(
                         val current = offset.value
                         var target = current + delta
 
-                        val min = if (canSwipeStats) -limit else 0f
-                        val max = limit
+                        val min = if (isVertical) {
+                            -limit
+                        } else {
+                            if (canSwipeStats) -limit else 0f
+                        }
+
+                        val max = if (isVertical) {
+                            if (canSwipeStats) limit else 0f
+                        } else {
+                            limit
+                        }
 
                         target = target.coerceIn(min, max)
 
@@ -906,28 +994,40 @@ fun SwipeableGameContainer(
                 onDragStopped = {
                     val currentVal = offset.value
 
-                    if (currentVal > 0) {
-                        if (currentVal > limit * 0.5f) {
-                            scope.launch {
-                                offset.animateTo(limit, tween(200))
-                                onDelete()
+                    if (isVertical) {
+                        if (currentVal < 0) {
+                            if (currentVal < -limit * 0.5f) {
+                                scope.launch {
+                                    offset.animateTo(-limit, tween(200))
+                                    onDelete()
+                                }
+                            } else {
+                                scope.launch { offset.animateTo(0f, tween(200)) }
                             }
-                        } else {
-                            scope.launch {
-                                offset.animateTo(0f, tween(200))
+                        } else if (currentVal > 0) {
+                            val target = limit * 0.5f
+                            if (currentVal > limit * 0.2f) {
+                                scope.launch { offset.animateTo(target, tween(200)) }
+                            } else {
+                                scope.launch { offset.animateTo(0f, tween(200)) }
                             }
                         }
-                    }
-                    else if (currentVal < 0) {
-                        val target = -(limit * 0.5f)
-
-                        if (currentVal < -(limit * 0.2f)) {
-                            scope.launch {
-                                offset.animateTo(target, tween(200))
+                    } else {
+                        if (currentVal > 0) {
+                            if (currentVal > limit * 0.5f) {
+                                scope.launch {
+                                    offset.animateTo(limit, tween(200))
+                                    onDelete()
+                                }
+                            } else {
+                                scope.launch { offset.animateTo(0f, tween(200)) }
                             }
-                        } else {
-                            scope.launch {
-                                offset.animateTo(0f, tween(200))
+                        } else if (currentVal < 0) {
+                            val target = -(limit * 0.5f)
+                            if (currentVal < -(limit * 0.2f)) {
+                                scope.launch { offset.animateTo(target, tween(200)) }
+                            } else {
+                                scope.launch { offset.animateTo(0f, tween(200)) }
                             }
                         }
                     }
@@ -938,7 +1038,7 @@ fun SwipeableGameContainer(
             content = {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(bgShape)
                         .background(deleteBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -952,14 +1052,16 @@ fun SwipeableGameContainer(
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(bgShape)
                         .background(statsBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
+                    val reqModifier = if (isVertical) Modifier.requiredHeight(with(density) { (limit * 0.5f).toDp() })
+                    else Modifier.requiredWidth(with(density) { (limit * 0.5f).toDp() })
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(8.dp).requiredWidth(with(density) { (limit * 0.5f).toDp() })
+                        modifier = Modifier.padding(8.dp).then(reqModifier)
                     ) {
                         if (isVertical) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1000,26 +1102,31 @@ fun SwipeableGameContainer(
 
             val offsetVal = offset.value
 
-            val deleteWidth = if (offsetVal > 0) offsetVal.roundToInt() else 0
-            val statsWidth = if (offsetVal < 0) offsetVal.absoluteValue.roundToInt() else 0
+            val action1Size = if (offsetVal > 0 && !isVertical) offsetVal.roundToInt()
+            else if (offsetVal < 0 && isVertical) offsetVal.absoluteValue.roundToInt()
+            else 0
 
-            val deletePlaceable = measurables[0].measure(Constraints.fixed(deleteWidth, height))
-            val statsPlaceable = measurables[1].measure(Constraints.fixed(statsWidth, height))
+            val action2Size = if (offsetVal < 0 && !isVertical) offsetVal.absoluteValue.roundToInt()
+            else if (offsetVal > 0 && isVertical) offsetVal.roundToInt()
+            else 0
+
+            val deletePlaceable = measurables[0].measure(Constraints.fixed(if (isVertical) width else action1Size, if (isVertical) action1Size else height))
+            val statsPlaceable = measurables[1].measure(Constraints.fixed(if (isVertical) width else action2Size, if (isVertical) action2Size else height))
 
             layout(width, height) {
-                if (deleteWidth > 0) {
+                if (action1Size > 0) {
                     if (isVertical) {
-                        deletePlaceable.place(0, height - deleteWidth)
+                        deletePlaceable.place(0, height - action1Size)
                     } else {
                         deletePlaceable.place(0, 0)
                     }
                 }
 
-                if (statsWidth > 0) {
+                if (action2Size > 0) {
                     if (isVertical) {
                         statsPlaceable.place(0, 0)
                     } else {
-                        statsPlaceable.place(width - statsWidth, 0)
+                        statsPlaceable.place(width - action2Size, 0)
                     }
                 }
 
@@ -1037,20 +1144,38 @@ fun SwipeableGameContainer(
 @Composable
 fun GameListItem(
     game: GameApp,
+    isSingle: Boolean = false,
+    isFirst: Boolean = false,
+    isLast: Boolean = false,
     onLaunch: () -> Unit,
     onStoreClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val topRound = if (isSingle || isFirst) 28.dp else 4.dp
+    val bottomRound = if (isSingle || isLast) 28.dp else 4.dp
+
+    val topStart by animateDpAsState(targetValue = if (isPressed) 28.dp else topRound, animationSpec = tween(200), label = "")
+    val topEnd by animateDpAsState(targetValue = if (isPressed) 28.dp else topRound, animationSpec = tween(200), label = "")
+    val bottomStart by animateDpAsState(targetValue = if (isPressed) 28.dp else bottomRound, animationSpec = tween(200), label = "")
+    val bottomEnd by animateDpAsState(targetValue = if (isPressed) 28.dp else bottomRound, animationSpec = tween(200), label = "")
+
+    val shape = RoundedCornerShape(topStart, topEnd, bottomStart, bottomEnd)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(104.dp)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(shape)
             .combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
                 onClick = onLaunch,
                 onLongClick = onLongClick
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),

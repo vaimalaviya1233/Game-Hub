@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.fedeveloper95.games"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.fedeveloper95.games"

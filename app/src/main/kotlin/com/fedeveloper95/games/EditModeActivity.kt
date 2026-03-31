@@ -8,7 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,8 +16,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -28,7 +29,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fedeveloper95.games.services.mainactivity.GameApp
 import com.fedeveloper95.games.services.mainactivity.GameViewModel
-import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.ExpressiveIconButton
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
@@ -68,13 +70,14 @@ class EditModeActivity : ComponentActivity() {
 @Composable
 fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isExpandedScreen = configuration.screenWidthDp >= 600
+
     val games by viewModel.games.collectAsState()
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
 
     val sortType = remember { mutableStateOf(prefs.getString("pref_sort_type", "Alphabetical") ?: "Alphabetical") }
     val currentCardStyle = remember { mutableStateOf(prefs.getString("pref_card_style", "Default") ?: "Default") }
-
-    var showSaveDialog by remember { mutableStateOf(false) }
 
     val currentViewType = remember(currentCardStyle.value) {
         when (currentCardStyle.value) {
@@ -83,12 +86,8 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
         }
     }
 
-    val listState = rememberLazyListState()
-    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+    val onMove = { fromIndex: Int, toIndex: Int ->
         val currentList = games.toMutableList()
-        val fromIndex = from.index
-        val toIndex = to.index
-
         if (fromIndex in currentList.indices && toIndex in currentList.indices) {
             val item = currentList.removeAt(fromIndex)
             currentList.add(toIndex, item)
@@ -99,30 +98,22 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
             }
         }
     }
+
+    val listState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(listState) { from, to -> onMove(from.index, to.index) }
 
     val gridState = rememberLazyGridState()
-    val reorderGridState = rememberReorderableLazyGridState(gridState) { from, to ->
-        val currentList = games.toMutableList()
-        val fromIndex = from.index
-        val toIndex = to.index
+    val reorderGridState = rememberReorderableLazyGridState(gridState) { from, to -> onMove(from.index, to.index) }
 
-        if (fromIndex in currentList.indices && toIndex in currentList.indices) {
-            val item = currentList.removeAt(fromIndex)
-            currentList.add(toIndex, item)
-            viewModel.updateGamesOrder(currentList)
-            if (sortType.value != "Custom") {
-                viewModel.switchToCustomSort(context)
-                sortType.value = "Custom"
-            }
-        }
-    }
+    val expandedListGridState = rememberLazyGridState()
+    val reorderExpandedListGridState = rememberReorderableLazyGridState(expandedListGridState) { from, to -> onMove(from.index, to.index) }
 
     LaunchedEffect(Unit) {
         viewModel.loadGames(context)
     }
 
     BackHandler {
-        showSaveDialog = true
+        onBack()
     }
 
     Scaffold(
@@ -133,6 +124,7 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = padding.calculateTopPadding())
+                .then(if (isExpandedScreen) Modifier.padding(horizontal = 64.dp) else Modifier)
         ) {
             Row(
                 modifier = Modifier
@@ -151,7 +143,7 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ExpressiveIconButton(
-                        onClick = { showSaveDialog = true },
+                        onClick = { onBack() },
                         icon = Icons.Default.Close,
                         contentDescription = stringResource(R.string.discard),
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -176,7 +168,7 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                     val gridShape = remember { RoundedCornerShape(24.dp) }
                     LazyVerticalGrid(
                         state = gridState,
-                        columns = GridCells.Fixed(2),
+                        columns = if (isExpandedScreen) GridCells.Adaptive(160.dp) else GridCells.Fixed(2),
                         contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -184,8 +176,16 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                     ) {
                         items(games, key = { it.packageName }) { game ->
                             ReorderableItem(reorderGridState, key = game.packageName) { isDragging ->
-                                val elevation by animateDpAsState(if (isDragging) 12.dp else 0.dp, label = "elevation")
-                                val scale by animateFloatAsState(if (isDragging) 1.05f else 1f, label = "scale")
+                                val elevation by animateDpAsState(
+                                    targetValue = if (isDragging) 12.dp else 0.dp,
+                                    animationSpec = tween(200),
+                                    label = "elevation"
+                                )
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isDragging) 1.05f else 1f,
+                                    animationSpec = tween(200),
+                                    label = "scale"
+                                )
 
                                 Box(
                                     modifier = Modifier
@@ -207,35 +207,98 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                         }
                     }
                 } else {
-                    val listShape = remember { RoundedCornerShape(28.dp) }
-                    LazyColumn(
-                        state = listState,
-                        contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(items = games, key = { it.packageName }) { game ->
-                            ReorderableItem(reorderState, key = game.packageName) { isDragging ->
-                                val elevation by animateDpAsState(if (isDragging) 16.dp else 0.dp, label = "elevation")
-                                val scale by animateFloatAsState(if (isDragging) 1.05f else 1f, label = "scale")
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .graphicsLayer {
-                                            scaleX = scale
-                                            scaleY = scale
-                                            shadowElevation = elevation.toPx()
-                                            shape = listShape
-                                            clip = false
-                                        }
-                                        .background(MaterialTheme.colorScheme.background)
-                                ) {
-                                    EditGameListItem(
-                                        game = game,
-                                        isDragging = isDragging,
-                                        dragHandleModifier = Modifier.draggableHandle()
+                    if (isExpandedScreen) {
+                        LazyVerticalGrid(
+                            state = expandedListGridState,
+                            columns = GridCells.Adaptive(minSize = 340.dp),
+                            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(games, key = { it.packageName }) { game ->
+                                ReorderableItem(reorderExpandedListGridState, key = game.packageName) { isDragging ->
+                                    val elevation by animateDpAsState(
+                                        targetValue = if (isDragging) 16.dp else 0.dp,
+                                        animationSpec = tween(200),
+                                        label = "elevation"
                                     )
+                                    val scale by animateFloatAsState(
+                                        targetValue = if (isDragging) 1.05f else 1f,
+                                        animationSpec = tween(200),
+                                        label = "scale"
+                                    )
+                                    val shape = RoundedCornerShape(28.dp)
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .graphicsLayer {
+                                                scaleX = scale
+                                                scaleY = scale
+                                                shadowElevation = elevation.toPx()
+                                                this.shape = shape
+                                                clip = false
+                                            }
+                                            .background(MaterialTheme.colorScheme.background)
+                                    ) {
+                                        EditGameListItem(
+                                            game = game,
+                                            shape = shape,
+                                            dragHandleModifier = Modifier.draggableHandle()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(items = games, key = { _, item -> item.packageName }) { index, game ->
+                                ReorderableItem(reorderState, key = game.packageName) { isDragging ->
+                                    val topRound = if (games.size == 1 || index == 0) 28.dp else 4.dp
+                                    val bottomRound = if (games.size == 1 || index == games.size - 1) 28.dp else 4.dp
+
+                                    val topStart by animateDpAsState(targetValue = if (isDragging) 28.dp else topRound, animationSpec = tween(200), label = "")
+                                    val topEnd by animateDpAsState(targetValue = if (isDragging) 28.dp else topRound, animationSpec = tween(200), label = "")
+                                    val bottomStart by animateDpAsState(targetValue = if (isDragging) 28.dp else bottomRound, animationSpec = tween(200), label = "")
+                                    val bottomEnd by animateDpAsState(targetValue = if (isDragging) 28.dp else bottomRound, animationSpec = tween(200), label = "")
+
+                                    val shape = RoundedCornerShape(topStart, topEnd, bottomStart, bottomEnd)
+
+                                    val elevation by animateDpAsState(
+                                        targetValue = if (isDragging) 16.dp else 0.dp,
+                                        animationSpec = tween(200),
+                                        label = "elevation"
+                                    )
+                                    val scale by animateFloatAsState(
+                                        targetValue = if (isDragging) 1.05f else 1f,
+                                        animationSpec = tween(200),
+                                        label = "scale"
+                                    )
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .graphicsLayer {
+                                                scaleX = scale
+                                                scaleY = scale
+                                                shadowElevation = elevation.toPx()
+                                                this.shape = shape
+                                                clip = false
+                                            }
+                                            .background(MaterialTheme.colorScheme.background)
+                                    ) {
+                                        EditGameListItem(
+                                            game = game,
+                                            shape = shape,
+                                            dragHandleModifier = Modifier.draggableHandle()
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -243,57 +306,6 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                 }
             }
         }
-    }
-
-    if (showSaveDialog) {
-        AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.save_order_title),
-                    fontFamily = GoogleSansFlex,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.save_order_description),
-                    fontFamily = GoogleSansFlex
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.saveOrder(context)
-                        showSaveDialog = false
-                        onBack()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Text(
-                        text = stringResource(R.string.save),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showSaveDialog = false
-                    onBack()
-                }) {
-                    Text(
-                        text = stringResource(R.string.discard),
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        )
     }
 }
 
@@ -306,10 +318,9 @@ private fun EditGridGameCard(
         modifier = Modifier.fillMaxSize(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -319,12 +330,11 @@ private fun EditGridGameCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                AppIcon(
-                    packageName = game.packageName,
-                    customIconUri = game.customIconUri,
+                GameIconDisplay(
+                    game = game,
                     modifier = Modifier
                         .size(64.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(CircleShape)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -343,7 +353,7 @@ private fun EditGridGameCard(
 
             Icon(
                 Icons.Default.DragHandle,
-                contentDescription = "Drag",
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = dragHandleModifier
                     .align(Alignment.TopEnd)
@@ -357,19 +367,19 @@ private fun EditGridGameCard(
 @Composable
 private fun EditGameListItem(
     game: GameApp,
-    isDragging: Boolean = false,
+    shape: Shape,
     dragHandleModifier: Modifier = Modifier
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(104.dp),
-        shape = RoundedCornerShape(28.dp),
+            .height(104.dp)
+            .clip(shape),
+        shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -377,12 +387,11 @@ private fun EditGameListItem(
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppIcon(
-                packageName = game.packageName,
-                customIconUri = game.customIconUri,
+            GameIconDisplay(
+                game = game,
                 modifier = Modifier
                     .size(68.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(CircleShape)
             )
             Spacer(modifier = Modifier.width(24.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -396,7 +405,7 @@ private fun EditGameListItem(
 
             Icon(
                 Icons.Default.DragHandle,
-                contentDescription = "Drag",
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = dragHandleModifier
             )

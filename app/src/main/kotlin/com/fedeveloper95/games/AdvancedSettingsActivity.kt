@@ -52,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -88,6 +89,8 @@ class AdvancedSettingsActivity : ComponentActivity() {
 @Composable
 fun AdvancedSettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isExpandedScreen = configuration.screenWidthDp >= 600
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
     var autoUpdates by remember { mutableStateOf(prefs.getBoolean(PREF_AUTO_UPDATES, true)) }
@@ -149,9 +152,11 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(top = padding.calculateTopPadding())
+                .then(if (isExpandedScreen) Modifier.padding(horizontal = 64.dp) else Modifier)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp)
+                .padding(top = 8.dp, bottom = padding.calculateBottomPadding() + 48.dp)
         ) {
             SettingsSwitchCard(
                 icon = Icons.Default.Settings,
@@ -284,8 +289,6 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                     showResetPopup = true
                 }
             )
-
-            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 
