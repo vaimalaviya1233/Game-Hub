@@ -543,25 +543,41 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                                 fontFamily = GoogleSansFlex,
                                                                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
                                                             )
-                                                            BoxWithConstraints(
-                                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                                                            ) {
-                                                                val cols = if (isExpandedScreen) 2 else gridColumns.intValue
-                                                                val totalSpacing = 16.dp * (cols - 1)
-                                                                val itemWidth = (maxWidth - totalSpacing) / cols
 
-                                                                FlowRow(
-                                                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                                                ) {
-                                                                    favoriteGames.forEach { game ->
-                                                                        Box(modifier = Modifier.width(itemWidth)) {
-                                                                            GridGameCard(
-                                                                                game = game,
-                                                                                columns = cols,
-                                                                                onLaunch = { launchGame(game) },
-                                                                                onLongClick = { gameToEdit = game }
-                                                                            )
+                                                            val cols = if (isExpandedScreen) 2 else gridColumns.intValue
+                                                            val chunkedFavorites = favoriteGames.chunked(cols)
+
+                                                            Column(
+                                                                modifier = Modifier.padding(horizontal = 16.dp),
+                                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                            ) {
+                                                                chunkedFavorites.forEach { rowGames ->
+                                                                    Row(
+                                                                        modifier = Modifier.fillMaxWidth(),
+                                                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                                                    ) {
+                                                                        rowGames.forEach { game ->
+                                                                            Box(modifier = Modifier.weight(1f)) {
+                                                                                SwipeableGameContainer(
+                                                                                    item = game,
+                                                                                    isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                                                    showLaunchCount = showLaunchCount.value,
+                                                                                    showPlayTime = showPlayTime.value,
+                                                                                    onDelete = { gameToRemove = game },
+                                                                                    shape = RoundedCornerShape(24.dp),
+                                                                                    fullSwipeStats = true
+                                                                                ) {
+                                                                                    GridGameCard(
+                                                                                        game = game,
+                                                                                        columns = cols,
+                                                                                        onLaunch = { launchGame(game) },
+                                                                                        onLongClick = { gameToEdit = game }
+                                                                                    )
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        repeat(cols - rowGames.size) {
+                                                                            Spacer(modifier = Modifier.weight(1f))
                                                                         }
                                                                     }
                                                                 }
@@ -805,6 +821,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
             },
             onUninstall = {
                 gameToRemove?.let {
+                    viewModel.hideGame(context, it.packageName)
                     try {
                         val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${it.packageName}"))
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1157,7 +1174,7 @@ fun SwipeableGameContainer(
     val canSwipeStats = showLaunchCount || showPlayTime
     val isVertical = orientation == Orientation.Vertical
 
-    val bgShape = RoundedCornerShape(28.dp)
+    val bgShape = shape
 
     LaunchedEffect(isDeleteCandidate) {
         if (!isDeleteCandidate && offset.value < 0f && isVertical) {
@@ -1406,6 +1423,7 @@ fun GameListItem(
                     text = game.name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     fontFamily = GoogleSansFlex
                 )
             }

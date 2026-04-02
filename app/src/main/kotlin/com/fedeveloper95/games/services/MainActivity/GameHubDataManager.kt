@@ -169,7 +169,7 @@ class GameViewModel : ViewModel() {
         } else {
             editor.putString(PREF_CUSTOM_ICON_PREFIX + packageName, customIconUri)
         }
-        editor.apply()
+        editor.commit()
 
         if (isFavorite) {
             addToPrefs(context, FAVORITE_GAMES_PREF, packageName)
@@ -217,7 +217,7 @@ class GameViewModel : ViewModel() {
     fun incrementLaunchCount(context: Context, packageName: String) {
         val prefs = context.getSharedPreferences("game_hub_prefs", Context.MODE_PRIVATE)
         val currentCount = prefs.getInt(PREF_PREFIX_COUNT + packageName, 0)
-        prefs.edit().putInt(PREF_PREFIX_COUNT + packageName, currentCount + 1).apply()
+        prefs.edit().putInt(PREF_PREFIX_COUNT + packageName, currentCount + 1).commit()
 
         val updatedGames = _games.value.map { game ->
             if (game.packageName == packageName) {
@@ -237,13 +237,13 @@ class GameViewModel : ViewModel() {
         val orderList = _games.value.map { it.packageName }
         val orderString = orderList.joinToString(",")
         val prefs = context.getSharedPreferences("game_hub_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putString(GAME_ORDER_PREF, orderString).apply()
+        prefs.edit().putString(GAME_ORDER_PREF, orderString).commit()
     }
 
     fun switchToCustomSort(context: Context) {
         saveOrder(context)
         val prefs = context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE)
-        prefs.edit().putString(PREF_SORT_TYPE, "Custom").apply()
+        prefs.edit().putString(PREF_SORT_TYPE, "Custom").commit()
     }
 
     private fun getSavedOrder(context: Context): List<String> {
@@ -256,6 +256,13 @@ class GameViewModel : ViewModel() {
         removeFromPrefs(context, MANUAL_GAMES_PREF, packageName)
         addToPrefs(context, HIDDEN_GAMES_PREF, packageName)
         removeFromPrefs(context, FAVORITE_GAMES_PREF, packageName)
+
+        val customDataPrefs = context.getSharedPreferences("game_hub_custom_data", Context.MODE_PRIVATE)
+        customDataPrefs.edit()
+            .remove(PREF_CUSTOM_NAME_PREFIX + packageName)
+            .remove(PREF_CUSTOM_ICON_PREFIX + packageName)
+            .commit()
+
         loadGames(context)
     }
 
@@ -272,17 +279,17 @@ class GameViewModel : ViewModel() {
 
     private fun addToPrefs(context: Context, key: String, value: String) {
         val prefs = context.getSharedPreferences("game_hub_prefs", Context.MODE_PRIVATE)
-        val set = prefs.getStringSet(key, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        val set = prefs.getStringSet(key, null)?.toMutableSet() ?: mutableSetOf()
         set.add(value)
-        prefs.edit().putStringSet(key, set).apply()
+        prefs.edit().putStringSet(key, set).commit()
     }
 
     private fun removeFromPrefs(context: Context, key: String, value: String) {
         val prefs = context.getSharedPreferences("game_hub_prefs", Context.MODE_PRIVATE)
-        val set = prefs.getStringSet(key, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        val set = prefs.getStringSet(key, null)?.toMutableSet() ?: mutableSetOf()
         if (set.contains(value)) {
             set.remove(value)
-            prefs.edit().putStringSet(key, set).apply()
+            prefs.edit().putStringSet(key, set).commit()
         }
     }
 }
