@@ -529,7 +529,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                 item(span = { GridItemSpan(maxLineSpan) }) {
                                                     Card(
                                                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                                        shape = RoundedCornerShape(32.dp),
+                                                        shape = RoundedCornerShape(28.dp),
                                                         colors = CardDefaults.cardColors(
                                                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                                                         ),
@@ -625,7 +625,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                     item(span = { GridItemSpan(maxLineSpan) }) {
                                                         Card(
                                                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                                                            shape = RoundedCornerShape(32.dp),
+                                                            shape = RoundedCornerShape(28.dp),
                                                             colors = CardDefaults.cardColors(
                                                                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                                                             ),
@@ -641,9 +641,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                                 )
                                                                 favoriteGames.forEachIndexed { index, game ->
                                                                     val shape = when {
-                                                                        favoriteGames.size == 1 -> RoundedCornerShape(24.dp)
-                                                                        index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
-                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+                                                                        favoriteGames.size == 1 -> RoundedCornerShape(28.dp)
+                                                                        index == 0 -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
                                                                         else -> RoundedCornerShape(4.dp)
                                                                     }
                                                                     Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
@@ -711,7 +711,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                     item {
                                                         Card(
                                                             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                                                            shape = RoundedCornerShape(32.dp),
+                                                            shape = RoundedCornerShape(28.dp),
                                                             colors = CardDefaults.cardColors(
                                                                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                                                             ),
@@ -727,9 +727,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                                 )
                                                                 favoriteGames.forEachIndexed { index, game ->
                                                                     val shape = when {
-                                                                        favoriteGames.size == 1 -> RoundedCornerShape(24.dp)
-                                                                        index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
-                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+                                                                        favoriteGames.size == 1 -> RoundedCornerShape(28.dp)
+                                                                        index == 0 -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
                                                                         else -> RoundedCornerShape(4.dp)
                                                                     }
                                                                     Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
@@ -1174,7 +1174,7 @@ fun SwipeableGameContainer(
     val canSwipeStats = showLaunchCount || showPlayTime
     val isVertical = orientation == Orientation.Vertical
 
-    val bgShape = shape
+    val bgShape = RoundedCornerShape(28.dp)
 
     LaunchedEffect(isDeleteCandidate) {
         if (!isDeleteCandidate && offset.value < 0f && isVertical) {
@@ -1208,6 +1208,7 @@ fun SwipeableGameContainer(
                         }
 
                         target = target.coerceIn(min, max)
+
                         offset.snapTo(target)
                     }
                 },
@@ -1225,9 +1226,8 @@ fun SwipeableGameContainer(
                                 scope.launch { offset.animateTo(0f, tween(200)) }
                             }
                         } else if (currentVal > 0) {
-                            val statsFraction = if (fullSwipeStats) 1f else 0.5f
-                            val target = limit * statsFraction
-                            val threshold = limit * 0.2f
+                            val target = if (fullSwipeStats) limit else limit * 0.5f
+                            val threshold = if (fullSwipeStats) limit * 0.5f else limit * 0.2f
                             if (currentVal > threshold) {
                                 scope.launch { offset.animateTo(target, tween(200)) }
                             } else {
@@ -1245,9 +1245,8 @@ fun SwipeableGameContainer(
                                 scope.launch { offset.animateTo(0f, tween(200)) }
                             }
                         } else if (currentVal < 0) {
-                            val statsFraction = if (fullSwipeStats) 1f else 0.5f
-                            val target = -(limit * statsFraction)
-                            val threshold = -(limit * 0.2f)
+                            val target = if (fullSwipeStats) -limit else -(limit * 0.5f)
+                            val threshold = if (fullSwipeStats) -(limit * 0.5f) else -(limit * 0.2f)
                             if (currentVal < threshold) {
                                 scope.launch { offset.animateTo(target, tween(200)) }
                             } else {
@@ -1283,7 +1282,6 @@ fun SwipeableGameContainer(
                     val statsFraction = if (fullSwipeStats) 1f else 0.5f
                     val reqModifier = if (isVertical) Modifier.requiredHeight(with(density) { (limit * statsFraction).toDp() })
                     else Modifier.requiredWidth(with(density) { (limit * statsFraction).toDp() })
-
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
