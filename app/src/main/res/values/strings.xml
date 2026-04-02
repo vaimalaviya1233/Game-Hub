@@ -185,5 +185,9 @@
     <string name="add_favorite">Add to favorites</string>
     <string name="remove_favorite">Remove from favorites</string>
     <string name="favorites">Favorites</string>
+    <string name="settings_app_icon_title">App Icon</string>
+    <string name="settings_app_icon_expressive">Expressive</string>
+    <string name="settings_app_icon_flat">Flat</string>
+    <string name="dialog_app_icon_title">Choose App Icon</string>
 
 </resources>

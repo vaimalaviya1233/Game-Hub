@@ -3,6 +3,7 @@ package com.fedeveloper95.games
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -30,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DateRange
@@ -72,6 +74,7 @@ import com.fedeveloper95.games.elements.SettingsActivity.ThemePopup
 import com.fedeveloper95.games.elements.SettingsActivity.CardStylePopup
 import com.fedeveloper95.games.elements.SettingsActivity.NamePopup
 import com.fedeveloper95.games.elements.SettingsActivity.GameOrderPopup
+import com.fedeveloper95.games.elements.SettingsActivity.IconPopup
 import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
 
 class SettingsActivity : ComponentActivity() {
@@ -95,6 +98,8 @@ const val PREF_THEME = "pref_theme"
 const val THEME_SYSTEM = 0
 const val THEME_LIGHT = 1
 const val THEME_DARK = 2
+
+const val PREF_APP_ICON = "pref_app_icon"
 
 const val PREF_CARD_STYLE = "pref_card_style"
 const val CARD_STYLE_DEFAULT = "Default"
@@ -123,6 +128,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
 
     var currentTheme by remember { mutableIntStateOf(prefs.getInt(PREF_THEME, THEME_SYSTEM)) }
+    var currentAppIcon by remember { mutableStateOf(prefs.getString(PREF_APP_ICON, "Expressive") ?: "Expressive") }
     var currentCardStyle by remember { mutableStateOf(prefs.getString(PREF_CARD_STYLE, CARD_STYLE_DEFAULT) ?: CARD_STYLE_DEFAULT) }
     var gridColumns by remember { mutableIntStateOf(prefs.getInt(PREF_GRID_COLUMNS, 2)) }
     var currentSortType by remember { mutableStateOf(prefs.getString(PREF_SORT_TYPE, "Alphabetical") ?: "Alphabetical") }
@@ -136,6 +142,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var userName by remember { mutableStateOf(prefs.getString(PREF_USER_NAME, "User") ?: "User") }
 
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showIconDialog by remember { mutableStateOf(false) }
     var showStyleDialog by remember { mutableStateOf(false) }
     var showSortDialog by remember { mutableStateOf(false) }
     var showNameDialog by remember { mutableStateOf(false) }
@@ -221,6 +228,18 @@ fun SettingsScreen(onBack: () -> Unit) {
                 iconColor = Color(0xFF6d3a01),
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
                 onClick = { showThemeDialog = true }
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            SettingsItemCard(
+                icon = Icons.Default.Apps,
+                title = stringResource(R.string.settings_app_icon_title),
+                subtitle = if (currentAppIcon == "Expressive") stringResource(R.string.settings_app_icon_expressive) else stringResource(R.string.settings_app_icon_flat),
+                containerColor = Color(0xFFD8B9FC),
+                iconColor = Color(0xFF5629A4),
+                shape = RoundedCornerShape(4.dp),
+                onClick = { showIconDialog = true }
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -624,6 +643,31 @@ fun SettingsScreen(onBack: () -> Unit) {
                 showSortDialog = false
             },
             onDismiss = { showSortDialog = false }
+        )
+    }
+
+    if (showIconDialog) {
+        IconPopup(
+            currentIcon = currentAppIcon,
+            onIconSelected = { newIcon ->
+                currentAppIcon = newIcon
+                prefs.edit().putString(PREF_APP_ICON, newIcon).apply()
+
+                val pm = context.packageManager
+                val expressiveComponent = ComponentName(context, "com.fedeveloper95.games.ExpressiveIcon")
+                val flatComponent = ComponentName(context, "com.fedeveloper95.games.FlatIcon")
+
+                if (newIcon == "Expressive") {
+                    pm.setComponentEnabledSetting(expressiveComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+                    pm.setComponentEnabledSetting(flatComponent, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+                } else {
+                    pm.setComponentEnabledSetting(flatComponent, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+                    pm.setComponentEnabledSetting(expressiveComponent, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+                }
+
+                showIconDialog = false
+            },
+            onDismiss = { showIconDialog = false }
         )
     }
 }
