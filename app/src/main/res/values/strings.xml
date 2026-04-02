@@ -180,4 +180,10 @@
     <string name="settings_reset_desc">Delete all data and restore default settings</string>
     <string name="settings_reset_confirmation_desc">Are you sure you want to reset the app? All your saved games, customizations, and settings will be permanently deleted. This action cannot be undone.</string>
     <string name="settings_reset_action">Reset App</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="settings_grid_columns_title">Grid columns</string>
+    <string name="add_favorite">Add to favorites</string>
+    <string name="remove_favorite">Remove from favorites</string>
+    <string name="favorites">Favorites</string>
+
 </resources>

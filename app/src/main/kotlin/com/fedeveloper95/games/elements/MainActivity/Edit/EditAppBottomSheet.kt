@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Image
@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.SmartToy
@@ -64,6 +65,7 @@ fun EditAppBottomSheet(
 
     var customName by remember { mutableStateOf(game.customName ?: game.name) }
     var customIconUri by remember { mutableStateOf<String?>(game.customIconUri) }
+    var isFavorite by remember { mutableStateOf(game.isFavorite) }
 
     var showAppIconSelector by remember { mutableStateOf(false) }
     var showBuiltInIconSelector by remember { mutableStateOf(false) }
@@ -100,6 +102,14 @@ fun EditAppBottomSheet(
         targetValue = if (isPressed) 15 else 50,
         animationSpec = tween(durationMillis = 200),
         label = "btnMorph"
+    )
+
+    val favInteractionSource = remember { MutableInteractionSource() }
+    val isFavPressed by favInteractionSource.collectIsPressedAsState()
+    val favCornerPercent by animateIntAsState(
+        targetValue = if (isFavPressed) 15 else 50,
+        animationSpec = tween(durationMillis = 200),
+        label = "favBtnMorph"
     )
 
     ModalBottomSheet(
@@ -283,9 +293,43 @@ fun EditAppBottomSheet(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            OutlinedButton(
+                onClick = {
+                    val newFavState = !isFavorite
+                    isFavorite = newFavState
+                    viewModel.updateCustomGameData(context, game.packageName, customName, customIconUri, newFavState)
+                    scope.launch {
+                        sheetState.hide()
+                        onDismiss()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(favCornerPercent),
+                interactionSource = favInteractionSource,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                ),
+                border = BorderStroke(1.dp, if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isFavorite) stringResource(R.string.remove_favorite) else stringResource(R.string.add_favorite),
+                    fontFamily = GoogleSansFlex,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
-                    viewModel.updateCustomGameData(context, game.packageName, customName, customIconUri)
+                    viewModel.updateCustomGameData(context, game.packageName, customName, customIconUri, isFavorite)
                     scope.launch {
                         sheetState.hide()
                         onDismiss()
@@ -301,8 +345,6 @@ fun EditAppBottomSheet(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.save),
                     fontFamily = GoogleSansFlex,

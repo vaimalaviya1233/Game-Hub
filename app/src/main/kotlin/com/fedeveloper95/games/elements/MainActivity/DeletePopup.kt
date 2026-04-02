@@ -4,6 +4,8 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +33,7 @@ import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 fun DeletePopup(
     game: GameApp,
     onConfirm: () -> Unit,
+    onUninstall: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val confirmInteractionSource = remember { MutableInteractionSource() }
@@ -39,6 +42,14 @@ fun DeletePopup(
         targetValue = if (isConfirmPressed) 15 else 50,
         animationSpec = tween(durationMillis = 200),
         label = "confirmCorner"
+    )
+
+    val uninstallInteractionSource = remember { MutableInteractionSource() }
+    val isUninstallPressed by uninstallInteractionSource.collectIsPressedAsState()
+    val uninstallCorner by animateIntAsState(
+        targetValue = if (isUninstallPressed) 15 else 50,
+        animationSpec = tween(durationMillis = 200),
+        label = "uninstallCorner"
     )
 
     val dismissInteractionSource = remember { MutableInteractionSource() }
@@ -79,20 +90,36 @@ fun DeletePopup(
         shape = RoundedCornerShape(32.dp),
         tonalElevation = 6.dp,
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                ),
-                shape = RoundedCornerShape(confirmCorner),
-                interactionSource = confirmInteractionSource
-            ) {
-                Text(
-                    text = stringResource(R.string.remove),
-                    fontFamily = GoogleSansFlex,
-                    fontWeight = FontWeight.Bold
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(
+                    onClick = onUninstall,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(uninstallCorner),
+                    interactionSource = uninstallInteractionSource
+                ) {
+                    Text(
+                        text = stringResource(R.string.uninstall),
+                        fontFamily = GoogleSansFlex,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Button(
+                    onClick = onConfirm,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(confirmCorner),
+                    interactionSource = confirmInteractionSource
+                ) {
+                    Text(
+                        text = stringResource(R.string.remove),
+                        fontFamily = GoogleSansFlex,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         },
         dismissButton = {

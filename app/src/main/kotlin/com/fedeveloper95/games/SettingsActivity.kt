@@ -101,6 +101,8 @@ const val CARD_STYLE_DEFAULT = "Default"
 const val CARD_STYLE_HORIZONTAL = "Horizontal"
 const val CARD_STYLE_GRID = "Grid"
 
+const val PREF_GRID_COLUMNS = "pref_grid_columns"
+
 const val PREF_SHOW_GET_MORE_GAMES = "pref_show_get_more_games"
 const val PREF_SHOW_LAUNCH_COUNT = "pref_show_launch_count"
 const val PREF_AUTO_UPDATES = "pref_auto_updates"
@@ -122,6 +124,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 
     var currentTheme by remember { mutableIntStateOf(prefs.getInt(PREF_THEME, THEME_SYSTEM)) }
     var currentCardStyle by remember { mutableStateOf(prefs.getString(PREF_CARD_STYLE, CARD_STYLE_DEFAULT) ?: CARD_STYLE_DEFAULT) }
+    var gridColumns by remember { mutableIntStateOf(prefs.getInt(PREF_GRID_COLUMNS, 2)) }
     var currentSortType by remember { mutableStateOf(prefs.getString(PREF_SORT_TYPE, "Alphabetical") ?: "Alphabetical") }
 
     var showGetMoreGames by remember { mutableStateOf(prefs.getBoolean(PREF_SHOW_GET_MORE_GAMES, true)) }
@@ -231,6 +234,51 @@ fun SettingsScreen(onBack: () -> Unit) {
                 shape = RoundedCornerShape(4.dp),
                 onClick = { showStyleDialog = true }
             )
+
+            AnimatedVisibility(
+                visible = currentCardStyle == CARD_STYLE_GRID,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = stringResource(R.string.settings_grid_columns_title),
+                                fontFamily = GoogleSansFlex,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            SingleChoiceSegmentedButtonRow(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                listOf(2, 3, 4).forEachIndexed { index, columns ->
+                                    SegmentedButton(
+                                        selected = gridColumns == columns,
+                                        onClick = {
+                                            gridColumns = columns
+                                            prefs.edit().putInt(PREF_GRID_COLUMNS, columns).apply()
+                                        },
+                                        shape = SegmentedButtonDefaults.itemShape(index = index, count = 3)
+                                    ) {
+                                        Text(
+                                            text = columns.toString(),
+                                            fontFamily = GoogleSansFlex
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(2.dp))
 

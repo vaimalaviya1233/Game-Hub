@@ -27,7 +27,8 @@ data class GameApp(
     val launchCount: Int = 0,
     val totalPlayTime: Long = 0,
     val customName: String? = null,
-    val customIconUri: String? = null
+    val customIconUri: String? = null,
+    val isFavorite: Boolean = false
 )
 
 class GameViewModel : ViewModel() {
@@ -42,6 +43,7 @@ class GameViewModel : ViewModel() {
 
     private val HIDDEN_GAMES_PREF = "hidden_games"
     private val MANUAL_GAMES_PREF = "manual_games"
+    private val FAVORITE_GAMES_PREF = "favorite_games"
     private val GAME_ORDER_PREF = "game_order"
     private val PREF_PREFIX_COUNT = "play_count_"
     private val PREF_SORT_TYPE = "pref_sort_type"
@@ -65,6 +67,7 @@ class GameViewModel : ViewModel() {
                 try {
                     val hiddenGames = getPrefsSet(context, HIDDEN_GAMES_PREF)
                     val manualGames = getPrefsSet(context, MANUAL_GAMES_PREF)
+                    val favoriteGames = getPrefsSet(context, FAVORITE_GAMES_PREF)
                     val savedOrder = getSavedOrder(context)
                     val sortType = settings.getString(PREF_SORT_TYPE, "Alphabetical") ?: "Alphabetical"
                     val statsInterval = settings.getFloat(PREF_STATS_INTERVAL, 3f).roundToInt()
@@ -95,13 +98,13 @@ class GameViewModel : ViewModel() {
 
                         val isManualGame = manualGames.contains(packageName)
                         val isHidden = hiddenGames.contains(packageName)
+                        val isFavorite = favoriteGames.contains(packageName)
                         val count = prefs.getInt(PREF_PREFIX_COUNT + packageName, 0)
                         val time = usageStats[packageName] ?: 0L
 
                         val customName = customDataPrefs.getString(PREF_CUSTOM_NAME_PREFIX + packageName, null)
                         val customIconUri = customDataPrefs.getString(PREF_CUSTOM_ICON_PREFIX + packageName, null)
 
-                        // Usiamo il nome custom se presente, altrimenti quello originale
                         val displayName = if (!customName.isNullOrBlank()) customName else originalName
 
                         val app = GameApp(
@@ -111,7 +114,8 @@ class GameViewModel : ViewModel() {
                             launchCount = count,
                             totalPlayTime = time,
                             customName = customName,
-                            customIconUri = customIconUri
+                            customIconUri = customIconUri,
+                            isFavorite = isFavorite
                         )
 
                         if (!isDeclaredGame || isHidden) {
@@ -136,7 +140,7 @@ class GameViewModel : ViewModel() {
                             }
                         }
                         else -> gamesList.sortedBy { it.name }
-                    }
+                    }.sortedByDescending { it.isFavorite }
 
                     Pair(sortedGames, allAppsList.sortedBy { it.name })
                 } catch (e: Exception) {
@@ -150,7 +154,7 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    fun updateCustomGameData(context: Context, packageName: String, customName: String?, customIconUri: String?) {
+    fun updateCustomGameData(context: Context, packageName: String, customName: String?, customIconUri: String?, isFavorite: Boolean) {
         val customDataPrefs = context.getSharedPreferences("game_hub_custom_data", Context.MODE_PRIVATE)
         val editor = customDataPrefs.edit()
 
@@ -165,9 +169,15 @@ class GameViewModel : ViewModel() {
         } else {
             editor.putString(PREF_CUSTOM_ICON_PREFIX + packageName, customIconUri)
         }
-
         editor.apply()
-        loadGames(context) // Ricarica la lista per applicare immediatamente le modifiche
+
+        if (isFavorite) {
+            addToPrefs(context, FAVORITE_GAMES_PREF, packageName)
+        } else {
+            removeFromPrefs(context, FAVORITE_GAMES_PREF, packageName)
+        }
+
+        loadGames(context)
     }
 
     private fun getUsageStats(context: Context, intervalIndex: Int): Map<String, Long> {
@@ -245,6 +255,7 @@ class GameViewModel : ViewModel() {
     fun hideGame(context: Context, packageName: String) {
         removeFromPrefs(context, MANUAL_GAMES_PREF, packageName)
         addToPrefs(context, HIDDEN_GAMES_PREF, packageName)
+        removeFromPrefs(context, FAVORITE_GAMES_PREF, packageName)
         loadGames(context)
     }
 

@@ -1,8 +1,12 @@
 package com.fedeveloper95.games.elements.MainActivity.Edit
 
 import android.content.Intent
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -28,13 +31,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,7 +55,7 @@ import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppIconSelector(
     onDismiss: () -> Unit,
@@ -84,17 +84,12 @@ fun AppIconSelector(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        dragHandle = null,
-        scrimColor = Color.Black.copy(alpha = 0.5f)
+        sheetState = sheetState
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp)
         ) {
             Text(
                 text = stringResource(R.string.select_app_title),
@@ -102,7 +97,7 @@ fun AppIconSelector(
                     fontFamily = GoogleSansFlex,
                     fontWeight = FontWeight.Bold
                 ),
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
             )
 
             TextField(
@@ -131,106 +126,105 @@ fun AppIconSelector(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            CompositionLocalProvider(
-                LocalOverscrollConfiguration provides null
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    itemsIndexed(
-                        items = filteredApps,
-                        key = { _, app -> app.first }
-                    ) { index, app ->
-                        val shape = when {
-                            filteredApps.size == 1 -> RoundedCornerShape(28.dp)
-                            index == 0 -> RoundedCornerShape(
-                                topStart = 28.dp,
-                                topEnd = 28.dp,
-                                bottomStart = 4.dp,
-                                bottomEnd = 4.dp
-                            )
-                            index == filteredApps.size - 1 -> RoundedCornerShape(
-                                topStart = 4.dp,
-                                topEnd = 4.dp,
-                                bottomStart = 28.dp,
-                                bottomEnd = 28.dp
-                            )
-                            else -> RoundedCornerShape(4.dp)
-                        }
-
-                        GroupedIconAppItem(
-                            packageName = app.first,
-                            appName = app.second,
-                            shape = shape,
-                            onSelect = {
-                                scope.launch {
-                                    sheetState.hide()
-                                    onAppSelected(app.first)
-                                }
+                itemsIndexed(
+                    items = filteredApps,
+                    key = { _, app -> app.first }
+                ) { index, app ->
+                    GroupedIconAppItem(
+                        packageName = app.first,
+                        appName = app.second,
+                        isSingle = filteredApps.size == 1,
+                        isFirst = index == 0,
+                        isLast = index == filteredApps.size - 1,
+                        onSelect = {
+                            scope.launch {
+                                sheetState.hide()
+                                onAppSelected(app.first)
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GroupedIconAppItem(
     packageName: String,
     appName: String,
-    shape: Shape,
+    isSingle: Boolean,
+    isFirst: Boolean,
+    isLast: Boolean,
     onSelect: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    Surface(
-        onClick = onSelect,
-        shape = shape,
-        color = if (isPressed) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
-        interactionSource = interactionSource,
+    val topRound = if (isSingle || isFirst) 20.dp else 4.dp
+    val bottomRound = if (isSingle || isLast) 20.dp else 4.dp
+
+    val targetTopStart = if (isPressed) 20.dp else topRound
+    val targetTopEnd = if (isPressed) 20.dp else topRound
+    val targetBottomStart = if (isPressed) 20.dp else bottomRound
+    val targetBottomEnd = if (isPressed) 20.dp else bottomRound
+
+    val topStart by animateDpAsState(targetTopStart, tween(200), label = "")
+    val topEnd by animateDpAsState(targetTopEnd, tween(200), label = "")
+    val bottomStart by animateDpAsState(targetBottomStart, tween(200), label = "")
+    val bottomEnd by animateDpAsState(targetBottomEnd, tween(200), label = "")
+
+    val shape = RoundedCornerShape(topStart, topEnd, bottomStart, bottomEnd)
+
+    val bgColor = if (isPressed) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(72.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AppIcon(
-                packageName = packageName,
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
+            .clip(shape)
+            .background(bgColor)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onSelect
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = appName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontFamily = GoogleSansFlex,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = packageName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontFamily = GoogleSansFlex
-                )
-            }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AppIcon(
+            packageName = packageName,
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = appName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontFamily = GoogleSansFlex,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = packageName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontFamily = GoogleSansFlex
+            )
         }
     }
 }

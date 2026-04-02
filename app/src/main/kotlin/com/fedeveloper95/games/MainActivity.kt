@@ -28,11 +28,13 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -47,6 +49,7 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Timer
@@ -117,7 +120,6 @@ import com.fedeveloper95.games.elements.ui.ExpressiveIconButton
 import com.fedeveloper95.games.elements.ui.AppIcon
 import com.fedeveloper95.games.elements.ui.AnimatedPlayButton
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
-import com.fedeveloper95.games.elements.ui.HomeSearchBar
 import com.fedeveloper95.games.services.SettingsActivity.Updater
 
 class MainActivity : ComponentActivity() {
@@ -138,7 +140,8 @@ class MainActivity : ComponentActivity() {
 enum class ViewType { Pager, Grid, List }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
-    ExperimentalTextApi::class, ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalTextApi::class, ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalLayoutApi::class
 )
 @Composable
 fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
@@ -165,6 +168,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
 
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
     val currentCardStyle = remember { mutableStateOf(prefs.getString("pref_card_style", "Default") ?: "Default") }
+    val gridColumns = remember { mutableIntStateOf(prefs.getInt("pref_grid_columns", 2)) }
     val showGetMoreGames = remember { mutableStateOf(prefs.getBoolean("pref_show_get_more_games", true)) }
     val autoUpdates = remember { mutableStateOf(prefs.getBoolean("pref_auto_updates", true)) }
 
@@ -230,6 +234,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
             if (key == "pref_card_style") {
                 currentCardStyle.value = sharedPreferences.getString("pref_card_style", "Default") ?: "Default"
             }
+            if (key == "pref_grid_columns") {
+                gridColumns.intValue = sharedPreferences.getInt("pref_grid_columns", 2)
+            }
             if (key == "pref_show_get_more_games") {
                 showGetMoreGames.value = sharedPreferences.getBoolean("pref_show_get_more_games", true)
             }
@@ -280,6 +287,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
         if (searchQuery.isEmpty()) games
         else games.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
+
+    val favoriteGames = remember(displayGames) { displayGames.filter { it.isFavorite } }
+    val normalGames = remember(displayGames) { displayGames.filter { !it.isFavorite } }
 
     val openPlayStore: (String) -> Unit = { packageName ->
         try {
@@ -509,23 +519,71 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                     ViewType.Grid -> {
                                         LazyVerticalGrid(
                                             state = gridState,
-                                            columns = if (isExpandedScreen) GridCells.Adaptive(160.dp) else GridCells.Fixed(2),
+                                            columns = if (isExpandedScreen) GridCells.Adaptive(160.dp) else GridCells.Fixed(gridColumns.intValue),
                                             contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
                                             verticalArrangement = Arrangement.spacedBy(16.dp),
                                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                                             modifier = Modifier.fillMaxSize()
                                         ) {
-                                            items(displayGames, key = { it.packageName }) { game ->
+                                            if (favoriteGames.isNotEmpty() && searchQuery.isEmpty()) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    Card(
+                                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                                        shape = RoundedCornerShape(32.dp),
+                                                        colors = CardDefaults.cardColors(
+                                                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                                        ),
+                                                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                                    ) {
+                                                        Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                                                            Text(
+                                                                text = stringResource(R.string.favorites),
+                                                                style = MaterialTheme.typography.titleMedium,
+                                                                color = MaterialTheme.colorScheme.primary,
+                                                                fontFamily = GoogleSansFlex,
+                                                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
+                                                            )
+                                                            BoxWithConstraints(
+                                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                                            ) {
+                                                                val cols = if (isExpandedScreen) 2 else gridColumns.intValue
+                                                                val totalSpacing = 16.dp * (cols - 1)
+                                                                val itemWidth = (maxWidth - totalSpacing) / cols
+
+                                                                FlowRow(
+                                                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                                ) {
+                                                                    favoriteGames.forEach { game ->
+                                                                        Box(modifier = Modifier.width(itemWidth)) {
+                                                                            GridGameCard(
+                                                                                game = game,
+                                                                                columns = cols,
+                                                                                onLaunch = { launchGame(game) },
+                                                                                onLongClick = { gameToEdit = game }
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            items(if (searchQuery.isEmpty()) normalGames else displayGames, key = { it.packageName }) { game ->
                                                 SwipeableGameContainer(
                                                     item = game,
                                                     isDeleteCandidate = gameToRemove?.packageName == game.packageName,
                                                     showLaunchCount = showLaunchCount.value,
                                                     showPlayTime = showPlayTime.value,
                                                     onDelete = { gameToRemove = game },
-                                                    shape = RoundedCornerShape(24.dp)
+                                                    shape = RoundedCornerShape(24.dp),
+                                                    fullSwipeStats = true
                                                 ) {
                                                     GridGameCard(
                                                         game = game,
+                                                        columns = if (isExpandedScreen) 2 else gridColumns.intValue,
                                                         onLaunch = { launchGame(game) },
                                                         onLongClick = { gameToEdit = game }
                                                     )
@@ -547,7 +605,58 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                                 modifier = Modifier.fillMaxSize()
                                             ) {
-                                                items(items = displayGames, key = { it.packageName }) { game ->
+                                                if (favoriteGames.isNotEmpty() && searchQuery.isEmpty()) {
+                                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                                        Card(
+                                                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                                            shape = RoundedCornerShape(32.dp),
+                                                            colors = CardDefaults.cardColors(
+                                                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                                            ),
+                                                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                                        ) {
+                                                            Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                                                                Text(
+                                                                    text = stringResource(R.string.favorites),
+                                                                    style = MaterialTheme.typography.titleMedium,
+                                                                    color = MaterialTheme.colorScheme.primary,
+                                                                    fontFamily = GoogleSansFlex,
+                                                                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
+                                                                )
+                                                                favoriteGames.forEachIndexed { index, game ->
+                                                                    val shape = when {
+                                                                        favoriteGames.size == 1 -> RoundedCornerShape(24.dp)
+                                                                        index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+                                                                        else -> RoundedCornerShape(4.dp)
+                                                                    }
+                                                                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
+                                                                        SwipeableGameContainer(
+                                                                            item = game,
+                                                                            isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                                            showLaunchCount = showLaunchCount.value,
+                                                                            showPlayTime = showPlayTime.value,
+                                                                            onDelete = { gameToRemove = game },
+                                                                            shape = shape
+                                                                        ) {
+                                                                            GameListItem(
+                                                                                game = game,
+                                                                                isSingle = favoriteGames.size == 1,
+                                                                                isFirst = index == 0,
+                                                                                isLast = index == favoriteGames.size - 1,
+                                                                                onLaunch = { launchGame(game) },
+                                                                                onStoreClick = { openPlayStore(game.packageName) },
+                                                                                onLongClick = { gameToEdit = game }
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                items(items = if (searchQuery.isEmpty()) normalGames else displayGames, key = { it.packageName }) { game ->
                                                     val shape = RoundedCornerShape(28.dp)
                                                     SwipeableGameContainer(
                                                         item = game,
@@ -582,16 +691,69 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                                 modifier = Modifier.fillMaxSize()
                                             ) {
-                                                itemsIndexed(items = displayGames, key = { _, item -> item.packageName }) { index, game ->
+                                                if (favoriteGames.isNotEmpty() && searchQuery.isEmpty()) {
+                                                    item {
+                                                        Card(
+                                                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                                                            shape = RoundedCornerShape(32.dp),
+                                                            colors = CardDefaults.cardColors(
+                                                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                                            ),
+                                                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                                        ) {
+                                                            Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                                                                Text(
+                                                                    text = stringResource(R.string.favorites),
+                                                                    style = MaterialTheme.typography.titleMedium,
+                                                                    color = MaterialTheme.colorScheme.primary,
+                                                                    fontFamily = GoogleSansFlex,
+                                                                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp)
+                                                                )
+                                                                favoriteGames.forEachIndexed { index, game ->
+                                                                    val shape = when {
+                                                                        favoriteGames.size == 1 -> RoundedCornerShape(24.dp)
+                                                                        index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+                                                                        else -> RoundedCornerShape(4.dp)
+                                                                    }
+                                                                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
+                                                                        SwipeableGameContainer(
+                                                                            item = game,
+                                                                            isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                                            showLaunchCount = showLaunchCount.value,
+                                                                            showPlayTime = showPlayTime.value,
+                                                                            onDelete = { gameToRemove = game },
+                                                                            shape = shape
+                                                                        ) {
+                                                                            GameListItem(
+                                                                                game = game,
+                                                                                isSingle = favoriteGames.size == 1,
+                                                                                isFirst = index == 0,
+                                                                                isLast = index == favoriteGames.size - 1,
+                                                                                onLaunch = { launchGame(game) },
+                                                                                onStoreClick = { openPlayStore(game.packageName) },
+                                                                                onLongClick = { gameToEdit = game }
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                val currentList = if (searchQuery.isEmpty()) normalGames else displayGames
+
+                                                itemsIndexed(items = currentList, key = { _, item -> item.packageName }) { index, game ->
                                                     val shape = when {
-                                                        displayGames.size == 1 -> RoundedCornerShape(28.dp)
+                                                        currentList.size == 1 -> RoundedCornerShape(28.dp)
                                                         index == 0 -> RoundedCornerShape(
                                                             topStart = 28.dp,
                                                             topEnd = 28.dp,
                                                             bottomStart = 4.dp,
                                                             bottomEnd = 4.dp
                                                         )
-                                                        index == displayGames.size - 1 -> RoundedCornerShape(
+                                                        index == currentList.size - 1 -> RoundedCornerShape(
                                                             topStart = 4.dp,
                                                             topEnd = 4.dp,
                                                             bottomStart = 28.dp,
@@ -610,9 +772,9 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                     ) {
                                                         GameListItem(
                                                             game = game,
-                                                            isSingle = displayGames.size == 1,
+                                                            isSingle = currentList.size == 1,
                                                             isFirst = index == 0,
-                                                            isLast = index == displayGames.size - 1,
+                                                            isLast = index == currentList.size - 1,
                                                             onLaunch = { launchGame(game) },
                                                             onStoreClick = { openPlayStore(game.packageName) },
                                                             onLongClick = { gameToEdit = game }
@@ -641,6 +803,18 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                 gameToRemove?.let { viewModel.hideGame(context, it.packageName) }
                 gameToRemove = null
             },
+            onUninstall = {
+                gameToRemove?.let {
+                    try {
+                        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${it.packageName}"))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                gameToRemove = null
+            },
             onDismiss = { gameToRemove = null }
         )
     }
@@ -656,8 +830,10 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
         AddAppsBottomSheet(
             allApps = viewModel.allApps.collectAsState().value,
             onDismiss = { showAddSheet = false },
-            onAdd = { pkg ->
-                viewModel.addManualGame(context, pkg)
+            onAdd = { pkgs ->
+                pkgs.forEach { pkg ->
+                    viewModel.addManualGame(context, pkg)
+                }
                 showAddSheet = false
             }
         )
@@ -671,6 +847,26 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
             }
         )
     }
+}
+
+@Composable
+fun HomeSearchBar(query: String, onQueryChange: (String) -> Unit) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text(stringResource(R.string.search_apps), fontFamily = GoogleSansFlex) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        shape = CircleShape,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = GoogleSansFlex)
+    )
 }
 
 @Composable
@@ -875,12 +1071,14 @@ fun HorizontalGameCard(
 @Composable
 fun GridGameCard(
     game: GameApp,
+    columns: Int,
     onLaunch: () -> Unit,
     onLongClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .aspectRatio(1f)
             .clip(RoundedCornerShape(24.dp))
             .combinedClickable(
                 onClick = onLaunch,
@@ -892,33 +1090,38 @@ fun GridGameCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(if (columns <= 2) 16.dp else 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                val iconFraction = if (columns <= 2) 0.55f else 0.8f
+
                 GameIconDisplay(
                     game = game,
                     modifier = Modifier
-                        .size(64.dp)
+                        .fillMaxWidth(iconFraction)
+                        .aspectRatio(1f)
                         .clip(CircleShape)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                if (columns <= 2) {
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = game.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    Text(
+                        text = game.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = GoogleSansFlex,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -934,6 +1137,7 @@ fun SwipeableGameContainer(
     modifier: Modifier = Modifier,
     orientation: Orientation = Orientation.Horizontal,
     shape: Shape = RoundedCornerShape(24.dp),
+    fullSwipeStats: Boolean = false,
     content: @Composable () -> Unit
 ) {
     var limit by remember { mutableFloatStateOf(0f) }
@@ -987,7 +1191,6 @@ fun SwipeableGameContainer(
                         }
 
                         target = target.coerceIn(min, max)
-
                         offset.snapTo(target)
                     }
                 },
@@ -1005,8 +1208,10 @@ fun SwipeableGameContainer(
                                 scope.launch { offset.animateTo(0f, tween(200)) }
                             }
                         } else if (currentVal > 0) {
-                            val target = limit * 0.5f
-                            if (currentVal > limit * 0.2f) {
+                            val statsFraction = if (fullSwipeStats) 1f else 0.5f
+                            val target = limit * statsFraction
+                            val threshold = limit * 0.2f
+                            if (currentVal > threshold) {
                                 scope.launch { offset.animateTo(target, tween(200)) }
                             } else {
                                 scope.launch { offset.animateTo(0f, tween(200)) }
@@ -1023,8 +1228,10 @@ fun SwipeableGameContainer(
                                 scope.launch { offset.animateTo(0f, tween(200)) }
                             }
                         } else if (currentVal < 0) {
-                            val target = -(limit * 0.5f)
-                            if (currentVal < -(limit * 0.2f)) {
+                            val statsFraction = if (fullSwipeStats) 1f else 0.5f
+                            val target = -(limit * statsFraction)
+                            val threshold = -(limit * 0.2f)
+                            if (currentVal < threshold) {
                                 scope.launch { offset.animateTo(target, tween(200)) }
                             } else {
                                 scope.launch { offset.animateTo(0f, tween(200)) }
@@ -1056,8 +1263,10 @@ fun SwipeableGameContainer(
                         .background(statsBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    val reqModifier = if (isVertical) Modifier.requiredHeight(with(density) { (limit * 0.5f).toDp() })
-                    else Modifier.requiredWidth(with(density) { (limit * 0.5f).toDp() })
+                    val statsFraction = if (fullSwipeStats) 1f else 0.5f
+                    val reqModifier = if (isVertical) Modifier.requiredHeight(with(density) { (limit * statsFraction).toDp() })
+                    else Modifier.requiredWidth(with(density) { (limit * statsFraction).toDp() })
+
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
