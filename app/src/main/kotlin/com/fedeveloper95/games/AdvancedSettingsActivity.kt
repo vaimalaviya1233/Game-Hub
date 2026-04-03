@@ -57,16 +57,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.Calendar
-import com.fedeveloper95.games.elements.ui.GameHubTheme
-import com.fedeveloper95.games.elements.ui.GoogleSansFlex
-import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.RestartPopup
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.exportSettings
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.importSettings
 import com.fedeveloper95.games.elements.MainActivity.CommunityBottomSheet
+import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
+import com.fedeveloper95.games.elements.ui.GameHubTheme
+import com.fedeveloper95.games.elements.ui.GoogleSansFlex
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class AdvancedSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

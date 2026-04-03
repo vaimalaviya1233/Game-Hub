@@ -25,9 +25,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import com.fedeveloper95.games.services.mainactivity.GameApp
 import com.fedeveloper95.games.R
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
+import com.fedeveloper95.games.services.mainactivity.GameApp
 
 @Composable
 fun DeletePopup(
