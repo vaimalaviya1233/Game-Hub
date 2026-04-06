@@ -7,8 +7,26 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
 import android.os.Build
 import android.os.Process
+import android.provider.MediaStore
+import android.util.LruCache
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.VideogameAsset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +71,96 @@ class GameViewModel : ViewModel() {
     private val PREF_CUSTOM_ICON_PREFIX = "custom_icon_"
 
     private var loadJob: Job? = null
+
+    // Cache per le icone (circa 1/8 della memoria disponibile)
+    private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+    private val cacheSize = maxMemory / 8
+    private val iconCache = object : LruCache<String, ImageBitmap>(cacheSize) {
+        override fun sizeOf(key: String, bitmap: ImageBitmap): Int {
+            return (bitmap.width * bitmap.height * 4) / 1024 // stima in KB per RGBA_8888
+        }
+    }
+
+    // Cache per i dati delle icone vettoriali
+    private val vectorIconCache = LruCache<String, Pair<ImageVector, Color>>(100)
+
+    fun getCachedBitmap(key: String): ImageBitmap? {
+        return iconCache.get(key)
+    }
+
+    fun getCachedVectorIcon(key: String): Pair<ImageVector, Color>? {
+        return vectorIconCache.get(key)
+    }
+
+    suspend fun loadIcon(context: Context, packageName: String, customIconUri: String?): Any? = withContext(Dispatchers.IO) {
+        val cacheKey = customIconUri ?: packageName
+
+        val cachedVector = vectorIconCache.get(cacheKey)
+        if (cachedVector != null) return@withContext cachedVector
+
+        val cachedBitmap = iconCache.get(cacheKey)
+        if (cachedBitmap != null) return@withContext cachedBitmap
+
+        try {
+            if (customIconUri?.startsWith("builtin://") == true) {
+                val parts = customIconUri.removePrefix("builtin://").split("#")
+                val iconName = parts[0]
+                val color = if (parts.size > 1) Color(parts[1].toInt()) else Color.Gray
+
+                val iconVector = when (iconName) {
+                    "star" -> Icons.Rounded.Star
+                    "controller" -> Icons.Rounded.SportsEsports
+                    "bolt" -> Icons.Rounded.Bolt
+                    "heart" -> Icons.Rounded.Favorite
+                    "gamepad" -> Icons.Rounded.Gamepad
+                    "videogame" -> Icons.Rounded.VideogameAsset
+                    "toy" -> Icons.Rounded.SmartToy
+                    else -> Icons.Rounded.SportsEsports
+                }
+                val vectorData = Pair(iconVector, color)
+                vectorIconCache.put(cacheKey, vectorData)
+                return@withContext vectorData
+            }
+
+            val bitmap = if (customIconUri?.startsWith("app://") == true) {
+                val targetPkg = customIconUri.removePrefix("app://")
+                context.packageManager.getApplicationIcon(targetPkg).toBitmap()
+            } else if (!customIconUri.isNullOrEmpty()) {
+                val uri = Uri.parse(customIconUri)
+                val androidBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    val source = ImageDecoder.createSource(context.contentResolver, uri)
+                    ImageDecoder.decodeBitmap(source)
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                }
+                androidBitmap.copy(Bitmap.Config.ARGB_8888, false)
+            } else {
+                context.packageManager.getApplicationIcon(packageName).toBitmap()
+            }
+
+            val imageBitmap = bitmap.asImageBitmap()
+            iconCache.put(cacheKey, imageBitmap)
+            return@withContext imageBitmap
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            try {
+                val fallbackBitmap = context.packageManager.getApplicationIcon(packageName).toBitmap().asImageBitmap()
+                iconCache.put(packageName, fallbackBitmap) // Salva col package name come fallback
+                return@withContext fallbackBitmap
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+        }
+        return@withContext null
+    }
+
+    fun clearIconCache() {
+        iconCache.evictAll()
+        vectorIconCache.evictAll()
+    }
+
 
     fun loadGames(context: Context) {
         loadJob?.cancel()
@@ -170,6 +278,12 @@ class GameViewModel : ViewModel() {
             editor.putString(PREF_CUSTOM_ICON_PREFIX + packageName, customIconUri)
         }
         editor.commit()
+
+        // Rimuovi dalla cache l'icona vecchia
+        val cacheKey = customIconUri ?: packageName
+        iconCache.remove(cacheKey)
+        vectorIconCache.remove(cacheKey)
+
 
         if (isFavorite) {
             addToPrefs(context, FAVORITE_GAMES_PREF, packageName)

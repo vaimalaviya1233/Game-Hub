@@ -13,12 +13,10 @@ import android.os.Build
 import android.os.Environment
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.content.FileProvider
 import com.fedeveloper95.games.UpdaterActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -159,41 +157,20 @@ class UpdateReceiver : BroadcastReceiver() {
             val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             if (downloadId != -1L) {
                 val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                val query = DownloadManager.Query().setFilterById(downloadId)
-                val cursor = downloadManager.query(query)
-
-                if (cursor.moveToFirst()) {
-                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
-                    if (cursor.getInt(statusIndex) == DownloadManager.STATUS_SUCCESSFUL) {
-                        val uriIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
-                        val uriString = cursor.getString(uriIndex)
-                        if (uriString != null) {
-                            val uri = Uri.parse(uriString)
-                            val file = File(uri.path!!)
-                            installApk(context, file)
-                        }
+                val uri = downloadManager.getUriForDownloadedFile(downloadId)
+                if (uri != null) {
+                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/vnd.android.package-archive")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    try {
+                        context.startActivity(installIntent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Install error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
-                cursor.close()
             }
-        }
-    }
-
-    private fun installApk(context: Context, file: File) {
-        try {
-            val contentUri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                file
-            )
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(contentUri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Install error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }

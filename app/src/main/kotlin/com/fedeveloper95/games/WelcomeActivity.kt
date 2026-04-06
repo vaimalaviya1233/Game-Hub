@@ -136,7 +136,7 @@ class WelcomeActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        val prefs = getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("game_hub_settings", MODE_PRIVATE)
         val isFirstRun = prefs.getBoolean("is_first_run", true)
         val forceShow = intent.getBooleanExtra("FORCE_SHOW", false)
 

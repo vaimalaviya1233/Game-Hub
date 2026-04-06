@@ -1018,7 +1018,7 @@ fun GameIconDisplay(game: GameApp, modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HorizontalGamePager(
     games: List<GameApp>,
@@ -1070,7 +1070,7 @@ fun HorizontalGamePager(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HorizontalGameCard(
     game: GameApp,
@@ -1132,7 +1132,7 @@ fun HorizontalGameCard(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GridGameCard(
     game: GameApp,
@@ -1412,7 +1412,7 @@ fun SwipeableGameContainer(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameListItem(
     game: GameApp,

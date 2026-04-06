@@ -162,8 +162,7 @@ suspend fun importSettings(context: Context, uri: Uri): Boolean {
                 val keys = json.keys()
                 while (keys.hasNext()) {
                     val key = keys.next()
-                    val value = json.get(key)
-                    when (value) {
+                    when (val value = json.get(key)) {
                         is Boolean -> editor.putBoolean(key, value)
                         is Int -> editor.putInt(key, value)
                         is Long -> editor.putLong(key, value)
