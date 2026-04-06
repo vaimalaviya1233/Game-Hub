@@ -23,6 +23,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App.Starting"
         android:enableOnBackInvokedCallback="true"
+        android:localeConfig="@xml/locales_config"
         tools:targetApi="37">
 
         <activity
@@ -80,8 +81,7 @@
         <activity
             android:name=".UpdaterActivity"
             android:exported="false"
-            android:theme="@style/Theme.GameHub"
-            />
+            android:theme="@style/Theme.GameHub" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

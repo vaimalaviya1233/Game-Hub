@@ -1,13 +1,12 @@
 [versions]
-agp = "9.0.1"
-kotlin = "2.2.10"
-coreKtx = "1.15.0"
-coreSplashscreen = "1.0.1"
+agp = "9.1.0"
+kotlin = "2.3.20"
+coreKtx = "1.18.0"
+coreSplashscreen = "1.2.0"
 graphicsShapes = "1.1.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
 composeBom = "2026.03.01"
-markdowntext = "3.4.0"
 material3 = "1.5.0-alpha16"
 coil = "2.7.0"
 reorderable = "3.0.0"
@@ -35,7 +34,6 @@ androidx-compose-material-icons = { group = "androidx.compose.material", name = 
 
 # Third Party
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-markdowntext = { module = "dev.jeziellago.compose.markdowntext:markdowntext", version.ref = "markdowntext" }
 sh-calvin-reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
