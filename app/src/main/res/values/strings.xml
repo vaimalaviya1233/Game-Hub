@@ -40,7 +40,6 @@
     <string name="feat_intro">Here is what you can do with your new Game Hub.</string>
 
     <string name="feat_order_title">Total Control</string>
-    <string name="feat_order_desc">Long press any card to enter Edit Mode. Drag to reorder your games exactly how you like them.</string>
 
     <string name="feat_layout_title">Shape shifting</string>
     <string name="feat_layout_desc">Go to Settings to change the card style: Default, Horizontal, or Grid. Make it yours.</string>
@@ -189,5 +188,6 @@
     <string name="settings_app_icon_expressive">Expressive</string>
     <string name="settings_app_icon_flat">Flat</string>
     <string name="dialog_app_icon_title">Choose App Icon</string>
+    <string name="feat_order_desc">Tap the pencil button to enter Edit Mode or hold a game to customize its appearance.</string>
 
 </resources>

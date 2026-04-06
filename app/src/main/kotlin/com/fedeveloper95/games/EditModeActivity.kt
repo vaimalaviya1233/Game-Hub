@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -187,63 +188,36 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                 }
             }
 
-            Box(modifier = Modifier.weight(1f)) {
-                if (currentViewType == ViewType.Grid) {
-                    val gridShape = remember { RoundedCornerShape(24.dp) }
-                    LazyVerticalGrid(
-                        state = gridState,
-                        columns = if (isExpandedScreen) GridCells.Adaptive(160.dp) else GridCells.Fixed(2),
-                        contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(games, key = { it.packageName }) { game ->
-                            ReorderableItem(reorderGridState, key = game.packageName) { isDragging ->
-                                val elevation by animateDpAsState(
-                                    targetValue = if (isDragging) 12.dp else 0.dp,
-                                    animationSpec = tween(200),
-                                    label = "elevation"
-                                )
-                                val scale by animateFloatAsState(
-                                    targetValue = if (isDragging) 1.05f else 1f,
-                                    animationSpec = tween(200),
-                                    label = "scale"
-                                )
-
-                                Box(
-                                    modifier = Modifier
-                                        .aspectRatio(1f)
-                                        .graphicsLayer {
-                                            scaleX = scale
-                                            scaleY = scale
-                                            shadowElevation = elevation.toPx()
-                                            shape = gridShape
-                                            clip = false
-                                        }
-                                ) {
-                                    EditGridGameCard(
-                                        game = game,
-                                        dragHandleModifier = Modifier.draggableHandle()
-                                    )
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if (isExpandedScreen) {
+            if (games.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_no_cards),
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            } else {
+                Box(modifier = Modifier.weight(1f)) {
+                    if (currentViewType == ViewType.Grid) {
+                        val gridShape = remember { RoundedCornerShape(24.dp) }
                         LazyVerticalGrid(
-                            state = expandedListGridState,
-                            columns = GridCells.Adaptive(minSize = 340.dp),
+                            state = gridState,
+                            columns = if (isExpandedScreen) GridCells.Adaptive(160.dp) else GridCells.Fixed(2),
                             contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(games, key = { it.packageName }) { game ->
-                                ReorderableItem(reorderExpandedListGridState, key = game.packageName) { isDragging ->
+                                ReorderableItem(reorderGridState, key = game.packageName) { isDragging ->
                                     val elevation by animateDpAsState(
-                                        targetValue = if (isDragging) 16.dp else 0.dp,
+                                        targetValue = if (isDragging) 12.dp else 0.dp,
                                         animationSpec = tween(200),
                                         label = "elevation"
                                     )
@@ -252,23 +226,20 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                                         animationSpec = tween(200),
                                         label = "scale"
                                     )
-                                    val shape = RoundedCornerShape(28.dp)
 
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth()
+                                            .aspectRatio(1f)
                                             .graphicsLayer {
                                                 scaleX = scale
                                                 scaleY = scale
                                                 shadowElevation = elevation.toPx()
-                                                this.shape = shape
+                                                shape = gridShape
                                                 clip = false
                                             }
-                                            .background(MaterialTheme.colorScheme.background)
                                     ) {
-                                        EditGameListItem(
+                                        EditGridGameCard(
                                             game = game,
-                                            shape = shape,
                                             dragHandleModifier = Modifier.draggableHandle()
                                         )
                                     }
@@ -276,52 +247,98 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                             }
                         }
                     } else {
-                        LazyColumn(
-                            state = listState,
-                            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            itemsIndexed(items = games, key = { _, item -> item.packageName }) { index, game ->
-                                ReorderableItem(reorderState, key = game.packageName) { isDragging ->
-                                    val topRound = if (games.size == 1 || index == 0) 28.dp else 4.dp
-                                    val bottomRound = if (games.size == 1 || index == games.size - 1) 28.dp else 4.dp
-
-                                    val topStart by animateDpAsState(targetValue = if (isDragging) 28.dp else topRound, animationSpec = tween(200), label = "")
-                                    val topEnd by animateDpAsState(targetValue = if (isDragging) 28.dp else topRound, animationSpec = tween(200), label = "")
-                                    val bottomStart by animateDpAsState(targetValue = if (isDragging) 28.dp else bottomRound, animationSpec = tween(200), label = "")
-                                    val bottomEnd by animateDpAsState(targetValue = if (isDragging) 28.dp else bottomRound, animationSpec = tween(200), label = "")
-
-                                    val shape = RoundedCornerShape(topStart, topEnd, bottomStart, bottomEnd)
-
-                                    val elevation by animateDpAsState(
-                                        targetValue = if (isDragging) 16.dp else 0.dp,
-                                        animationSpec = tween(200),
-                                        label = "elevation"
-                                    )
-                                    val scale by animateFloatAsState(
-                                        targetValue = if (isDragging) 1.05f else 1f,
-                                        animationSpec = tween(200),
-                                        label = "scale"
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .graphicsLayer {
-                                                scaleX = scale
-                                                scaleY = scale
-                                                shadowElevation = elevation.toPx()
-                                                this.shape = shape
-                                                clip = false
-                                            }
-                                            .background(MaterialTheme.colorScheme.background)
-                                    ) {
-                                        EditGameListItem(
-                                            game = game,
-                                            shape = shape,
-                                            dragHandleModifier = Modifier.draggableHandle()
+                        if (isExpandedScreen) {
+                            LazyVerticalGrid(
+                                state = expandedListGridState,
+                                columns = GridCells.Adaptive(minSize = 340.dp),
+                                contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(games, key = { it.packageName }) { game ->
+                                    ReorderableItem(reorderExpandedListGridState, key = game.packageName) { isDragging ->
+                                        val elevation by animateDpAsState(
+                                            targetValue = if (isDragging) 16.dp else 0.dp,
+                                            animationSpec = tween(200),
+                                            label = "elevation"
                                         )
+                                        val scale by animateFloatAsState(
+                                            targetValue = if (isDragging) 1.05f else 1f,
+                                            animationSpec = tween(200),
+                                            label = "scale"
+                                        )
+                                        val shape = RoundedCornerShape(28.dp)
+
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .graphicsLayer {
+                                                    scaleX = scale
+                                                    scaleY = scale
+                                                    shadowElevation = elevation.toPx()
+                                                    this.shape = shape
+                                                    clip = false
+                                                }
+                                                .background(MaterialTheme.colorScheme.background)
+                                        ) {
+                                            EditGameListItem(
+                                                game = game,
+                                                shape = shape,
+                                                dragHandleModifier = Modifier.draggableHandle()
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                state = listState,
+                                contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 100.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                itemsIndexed(items = games, key = { _, item -> item.packageName }) { index, game ->
+                                    ReorderableItem(reorderState, key = game.packageName) { isDragging ->
+                                        val topRound = if (games.size == 1 || index == 0) 28.dp else 4.dp
+                                        val bottomRound = if (games.size == 1 || index == games.size - 1) 28.dp else 4.dp
+
+                                        val topStart by animateDpAsState(targetValue = if (isDragging) 28.dp else topRound, animationSpec = tween(200), label = "")
+                                        val topEnd by animateDpAsState(targetValue = if (isDragging) 28.dp else topRound, animationSpec = tween(200), label = "")
+                                        val bottomStart by animateDpAsState(targetValue = if (isDragging) 28.dp else bottomRound, animationSpec = tween(200), label = "")
+                                        val bottomEnd by animateDpAsState(targetValue = if (isDragging) 28.dp else bottomRound, animationSpec = tween(200), label = "")
+
+                                        val shape = RoundedCornerShape(topStart, topEnd, bottomStart, bottomEnd)
+
+                                        val elevation by animateDpAsState(
+                                            targetValue = if (isDragging) 16.dp else 0.dp,
+                                            animationSpec = tween(200),
+                                            label = "elevation"
+                                        )
+                                        val scale by animateFloatAsState(
+                                            targetValue = if (isDragging) 1.05f else 1f,
+                                            animationSpec = tween(200),
+                                            label = "scale"
+                                        )
+
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .graphicsLayer {
+                                                    scaleX = scale
+                                                    scaleY = scale
+                                                    shadowElevation = elevation.toPx()
+                                                    this.shape = shape
+                                                    clip = false
+                                                }
+                                                .background(MaterialTheme.colorScheme.background)
+                                        ) {
+                                            EditGameListItem(
+                                                game = game,
+                                                shape = shape,
+                                                dragHandleModifier = Modifier.draggableHandle()
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -1,6 +1,7 @@
 package com.fedeveloper95.games
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -1481,6 +1482,7 @@ fun GameListItem(
     }
 }
 
+@SuppressLint("UseKtx")
 @Composable
 fun GetMoreGamesCard(context: Context) {
     val interactionSource = remember { MutableInteractionSource() }

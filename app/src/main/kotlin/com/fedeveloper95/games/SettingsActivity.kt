@@ -40,24 +40,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.ShoppingBag
+import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -86,6 +85,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
@@ -94,6 +96,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
@@ -249,7 +252,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             SettingsItemCard(
-                icon = Icons.Default.Palette,
+                icon = Icons.Rounded.Palette,
                 title = stringResource(R.string.settings_theme_title),
                 subtitle = when(currentTheme) {
                     THEME_LIGHT -> stringResource(R.string.settings_theme_light)
@@ -265,7 +268,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.Apps,
+                icon = Icons.Rounded.Apps,
                 title = stringResource(R.string.settings_app_icon_title),
                 subtitle = if (currentAppIcon == "Expressive") stringResource(R.string.settings_app_icon_expressive) else stringResource(R.string.settings_app_icon_flat),
                 containerColor = Color(0xFFD8B9FC),
@@ -277,7 +280,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.ViewAgenda,
+                icon = Icons.Rounded.ViewAgenda,
                 title = stringResource(R.string.settings_card_style_title),
                 subtitle = currentCardStyle,
                 containerColor = Color(0xFF80da88),
@@ -340,7 +343,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             SettingsSwitchCard(
-                icon = Icons.Default.Person,
+                icon = Icons.Rounded.Person,
                 title = stringResource(R.string.settings_show_name_title),
                 subtitle = stringResource(R.string.settings_show_name_desc),
                 containerColor = Color(0xFFffb683),
@@ -361,7 +364,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Column {
                     Spacer(modifier = Modifier.height(2.dp))
                     SettingsItemCard(
-                        icon = Icons.Default.Edit,
+                        icon = Icons.Rounded.Edit,
                         title = stringResource(R.string.settings_edit_name_title),
                         subtitle = userName,
                         containerColor = Color(0xFFe7e0ec),
@@ -385,7 +388,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             SettingsItemCard(
-                icon = Icons.Default.Sort,
+                icon = Icons.Rounded.Sort,
                 title = stringResource(R.string.settings_sort_title),
                 subtitle = when(currentSortType) {
                     "Alphabetical" -> stringResource(R.string.sort_alphabetical)
@@ -401,7 +404,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsSwitchCard(
-                icon = Icons.Default.History,
+                icon = Icons.Rounded.History,
                 title = stringResource(R.string.settings_show_launch_count_title),
                 subtitle = stringResource(R.string.settings_show_launch_count_desc),
                 containerColor = Color(0xFFd8b9fc),
@@ -423,7 +426,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             SettingsSwitchCard(
-                icon = Icons.Default.Timer,
+                icon = Icons.Rounded.Timer,
                 title = stringResource(R.string.settings_show_playtime_title),
                 subtitle = stringResource(R.string.settings_show_playtime_desc),
                 containerColor = Color(0xFFffaee4),
@@ -459,7 +462,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.DateRange,
+                                        imageVector = Icons.Rounded.DateRange,
                                         contentDescription = null,
                                         tint = Color(0xFF8a1a16),
                                         modifier = Modifier.size(24.dp)
@@ -506,7 +509,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             val getMoreGamesShape = if (isPixel) RoundedCornerShape(4.dp) else RoundedCornerShape(4.dp)
 
             SettingsSwitchCard(
-                icon = Icons.Default.ShoppingBag,
+                icon = Icons.Rounded.ShoppingBag,
                 title = stringResource(R.string.settings_show_get_more_title),
                 subtitle = stringResource(R.string.settings_show_get_more_desc),
                 containerColor = Color(0xFF67d4ff),
@@ -544,7 +547,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.Tune,
+                icon = Icons.Rounded.Tune,
                 title = stringResource(R.string.settings_advanced_title),
                 subtitle = stringResource(R.string.settings_advanced_desc),
                 containerColor = Color(0xFFC5C0FF),
@@ -569,7 +572,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             SettingsItemCard(
-                icon = Icons.Default.Info,
+                icon = Icons.Rounded.Info,
                 title = stringResource(R.string.settings_version_title),
                 subtitle = appInfo,
                 containerColor = Color(0xFFa1c9ff),
@@ -590,7 +593,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.Code,
+                icon = Icons.Rounded.Code,
                 title = stringResource(R.string.settings_developer_title),
                 subtitle = stringResource(R.string.settings_developer_name),
                 containerColor = Color(0xFFc7c7c7),
@@ -605,7 +608,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.BugReport,
+                icon = Icons.Rounded.BugReport,
                 title = stringResource(R.string.settings_report_title),
                 subtitle = stringResource(R.string.settings_report_desc),
                 containerColor = Color(0xFFffb3ae),
@@ -620,7 +623,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.SystemUpdate,
+                icon = R.drawable.ic_phone_update,
                 title = stringResource(R.string.settings_check_updates_title),
                 subtitle = stringResource(R.string.settings_check_updates_desc),
                 containerColor = Color(0xFF67d4ff),
@@ -706,7 +709,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 
 @Composable
 fun SettingsItemCard(
-    icon: ImageVector,
+    icon: Any,
     title: String,
     subtitle: String,
     containerColor: Color,
@@ -740,17 +743,17 @@ fun SettingsItemCard(
                     val be = lerp(shape.bottomEnd.toPx(size, density), targetPx, pressProgress)
 
                     return Outline.Rounded(
-                        androidx.compose.ui.geometry.RoundRect(
-                            rect = androidx.compose.ui.geometry.Rect(
+                        RoundRect(
+                            rect = Rect(
                                 0f,
                                 0f,
                                 size.width,
                                 size.height
                             ),
-                            topLeft = androidx.compose.ui.geometry.CornerRadius(ts),
-                            topRight = androidx.compose.ui.geometry.CornerRadius(te),
-                            bottomRight = androidx.compose.ui.geometry.CornerRadius(be),
-                            bottomLeft = androidx.compose.ui.geometry.CornerRadius(bs)
+                            topLeft = CornerRadius(ts),
+                            topRight = CornerRadius(te),
+                            bottomRight = CornerRadius(be),
+                            bottomLeft = CornerRadius(bs)
                         )
                     )
                 }
@@ -794,12 +797,21 @@ fun SettingsItemCard(
                         .background(containerColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (icon is ImageVector) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else if (icon is Int) {
+                        Icon(
+                            painter = painterResource(id = icon),
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             },
             modifier = Modifier
@@ -818,7 +830,7 @@ fun SettingsItemCard(
 
 @Composable
 fun SettingsSwitchCard(
-    icon: ImageVector,
+    icon: Any,
     title: String,
     subtitle: String,
     containerColor: Color,
@@ -853,17 +865,17 @@ fun SettingsSwitchCard(
                     val be = lerp(shape.bottomEnd.toPx(size, density), targetPx, pressProgress)
 
                     return Outline.Rounded(
-                        androidx.compose.ui.geometry.RoundRect(
-                            rect = androidx.compose.ui.geometry.Rect(
+                        RoundRect(
+                            rect = Rect(
                                 0f,
                                 0f,
                                 size.width,
                                 size.height
                             ),
-                            topLeft = androidx.compose.ui.geometry.CornerRadius(ts),
-                            topRight = androidx.compose.ui.geometry.CornerRadius(te),
-                            bottomRight = androidx.compose.ui.geometry.CornerRadius(be),
-                            bottomLeft = androidx.compose.ui.geometry.CornerRadius(bs)
+                            topLeft = CornerRadius(ts),
+                            topRight = CornerRadius(te),
+                            bottomRight = CornerRadius(be),
+                            bottomLeft = CornerRadius(bs)
                         )
                     )
                 }
@@ -907,12 +919,21 @@ fun SettingsSwitchCard(
                         .background(containerColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (icon is ImageVector) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else if (icon is Int) {
+                        Icon(
+                            painter = painterResource(id = icon),
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             },
             trailingContent = {

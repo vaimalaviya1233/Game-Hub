@@ -9,9 +9,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -25,13 +24,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -159,7 +158,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                 .padding(top = 8.dp, bottom = padding.calculateBottomPadding() + 48.dp)
         ) {
             SettingsSwitchCard(
-                icon = Icons.Default.Settings,
+                icon = Icons.Rounded.Settings,
                 title = stringResource(R.string.settings_auto_updates_title),
                 subtitle = stringResource(R.string.settings_auto_updates_desc),
                 containerColor = Color(0xFFfcbd00),
@@ -175,7 +174,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.Flag,
+                icon = Icons.Rounded.Flag,
                 title = stringResource(R.string.settings_setup_title),
                 subtitle = stringResource(R.string.settings_setup_desc),
                 containerColor = Color(0xFFffaee4),
@@ -202,7 +201,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
             )
 
             SettingsItemCard(
-                icon = Icons.Default.CloudUpload,
+                icon = Icons.Rounded.CloudUpload,
                 title = stringResource(R.string.settings_export_title),
                 subtitle = stringResource(R.string.settings_export_desc),
                 containerColor = Color(0xFF80da88),
@@ -217,7 +216,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.CloudDownload,
+                icon = Icons.Rounded.CloudDownload,
                 title = stringResource(R.string.settings_import_title),
                 subtitle = stringResource(R.string.settings_import_desc),
                 containerColor = Color(0xFF67d4ff),
@@ -241,7 +240,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
             )
 
             SettingsItemCard(
-                icon = Icons.Default.Group,
+                icon = Icons.Rounded.Group,
                 title = stringResource(R.string.settings_test_telegram_title),
                 subtitle = stringResource(R.string.settings_test_telegram_desc),
                 containerColor = Color(0xFF97cbff),
@@ -255,7 +254,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(2.dp))
 
             SettingsItemCard(
-                icon = Icons.Default.BugReport,
+                icon = Icons.Rounded.BugReport,
                 title = stringResource(R.string.settings_test_crash_title),
                 subtitle = stringResource(R.string.settings_test_crash_desc),
                 containerColor = Color(0xFFffb869),
@@ -279,7 +278,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
             )
 
             SettingsItemCard(
-                icon = Icons.Default.DeleteForever,
+                icon = Icons.Rounded.DeleteForever,
                 title = stringResource(R.string.settings_reset_title),
                 subtitle = stringResource(R.string.settings_reset_desc),
                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -323,7 +322,7 @@ fun ResetPopup(
     val isPressed by interactionSource.collectIsPressedAsState()
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = tween(durationMillis = 200),
         label = "btnMorph"
     )
 
@@ -331,7 +330,7 @@ fun ResetPopup(
     val textIsPressed by textInteractionSource.collectIsPressedAsState()
     val textCornerPercent by animateIntAsState(
         targetValue = if (textIsPressed) 15 else 50,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = tween(durationMillis = 200),
         label = "txtBtnMorph"
     )
 

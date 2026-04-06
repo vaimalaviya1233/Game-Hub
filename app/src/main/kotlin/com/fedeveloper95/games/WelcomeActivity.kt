@@ -22,20 +22,18 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -70,7 +68,6 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.ShoppingBag
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.SwipeRight
-import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -81,6 +78,7 @@ import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -97,13 +95,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -112,6 +115,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -121,9 +126,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 data class OnboardingPageInfo(
     val content: @Composable (onUpdateScrollState: (Boolean) -> Unit) -> Unit
@@ -176,9 +178,9 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
     val scope = rememberCoroutineScope()
     val commonAnimSpec = tween<Float>(durationMillis = 200, easing = FastOutSlowInEasing)
 
-    val topCardShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+    val topCardShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
     val middleCardShape = RoundedCornerShape(4.dp)
-    val bottomCardShape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
+    val bottomCardShape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
 
     val customWelcomeFontFamily = FontFamily(
         Font(
@@ -414,7 +416,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         Spacer(modifier = Modifier.height(2.dp))
 
                         PermissionCard(
-                            icon = Icons.Rounded.SystemUpdate,
+                            icon = R.drawable.ic_phone_update,
                             iconColor = Color(0xFFffb683),
                             iconTint = Color(0xFF753403),
                             title = stringResource(R.string.perm_install_title),
@@ -591,7 +593,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             Spacer(modifier = Modifier.height(2.dp))
 
                             FeatureCard(
-                                icon = Icons.Rounded.SystemUpdate,
+                                icon = R.drawable.ic_phone_update,
                                 iconColor = Color(0xFF67d4ff),
                                 iconTint = Color(0xFF004e5d),
                                 title = stringResource(R.string.feat_update_title),
@@ -699,7 +701,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     .fillMaxHeight()
                     .alpha(alphaBack)
             ) {
-                ExpressiveButton(
+                ExpressiveOutlinedButton(
                     text = stringResource(R.string.back),
                     onClick = {
                         if (!isFirstPage) {
@@ -708,7 +710,6 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             }
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -778,45 +779,19 @@ fun RotatingShapeContainer(modifier: Modifier = Modifier) {
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            rotate(rotation) {
-                val cx = size.width / 2
-                val cy = size.height / 2
-                val radius = size.minDimension / 2f
-                val outerRadius = radius * 0.95f
-                val innerRadius = radius * 0.75f
-                val numPoints = 12
-
-                val steps = 360
-                val angleStep = (2 * PI / steps).toFloat()
-
-                val path = Path()
-                for (i in 0 until steps) {
-                    val theta = i * angleStep
-                    val r = (outerRadius + innerRadius) / 2 + (outerRadius - innerRadius) / 2 * cos(numPoints * theta).toFloat()
-
-                    val x = cx + r * cos(theta).toFloat()
-                    val y = cy + r * sin(theta).toFloat()
-
-                    if (i == 0) {
-                        path.moveTo(x, y)
-                    } else {
-                        path.lineTo(x, y)
-                    }
-                }
-                path.close()
-
-                drawPath(
-                    path = path,
-                    color = primaryColor
-                )
-            }
-        }
+        Icon(
+            painter = painterResource(id = R.drawable.ic_twelve_sided_cookie),
+            contentDescription = null,
+            tint = primaryColor,
+            modifier = Modifier
+                .fillMaxSize()
+                .rotate(rotation)
+        )
 
         Icon(
-            imageVector = Icons.Rounded.SportsEsports,
+            painter = painterResource(id = R.drawable.ic_launcher_monochrome),
             contentDescription = null,
-            modifier = Modifier.size(130.dp),
+            modifier = Modifier.size(280.dp),
             tint = backgroundColor
         )
     }
@@ -824,7 +799,7 @@ fun RotatingShapeContainer(modifier: Modifier = Modifier) {
 
 @Composable
 fun PermissionCard(
-    icon: ImageVector,
+    icon: Any,
     iconColor: Color,
     iconTint: Color,
     title: String,
@@ -833,9 +808,55 @@ fun PermissionCard(
     control: @Composable () -> Unit,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "anim_shape"
+    )
+
+    val animatedShape = remember(shape, pressProgress) {
+        if (shape is RoundedCornerShape) {
+            object : Shape {
+                override fun createOutline(
+                    size: Size,
+                    layoutDirection: LayoutDirection,
+                    density: Density
+                ): Outline {
+                    val targetPx = with(density) { 20.dp.toPx() }
+                    fun lerp(start: Float, stop: Float, fraction: Float) =
+                        (1 - fraction) * start + fraction * stop
+
+                    val ts = lerp(shape.topStart.toPx(size, density), targetPx, pressProgress)
+                    val te = lerp(shape.topEnd.toPx(size, density), targetPx, pressProgress)
+                    val bs = lerp(shape.bottomStart.toPx(size, density), targetPx, pressProgress)
+                    val be = lerp(shape.bottomEnd.toPx(size, density), targetPx, pressProgress)
+
+                    return Outline.Rounded(
+                        RoundRect(
+                            rect = Rect(
+                                0f,
+                                0f,
+                                size.width,
+                                size.height
+                            ),
+                            topLeft = CornerRadius(ts),
+                            topRight = CornerRadius(te),
+                            bottomRight = CornerRadius(be),
+                            bottomLeft = CornerRadius(bs)
+                        )
+                    )
+                }
+            }
+        } else shape
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = shape,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(animatedShape),
+        shape = animatedShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -865,17 +886,30 @@ fun PermissionCard(
                         .background(iconColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (icon is ImageVector) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else if (icon is Int) {
+                        Icon(
+                            painter = painterResource(id = icon),
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             },
             trailingContent = control,
             modifier = Modifier
-                .clickable(onClick = onClick)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = onClick
+                )
                 .padding(vertical = 4.dp),
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent
@@ -886,16 +920,63 @@ fun PermissionCard(
 
 @Composable
 fun FeatureCard(
-    icon: ImageVector,
+    icon: Any,
     iconColor: Color,
     iconTint: Color,
     title: String,
     description: String,
-    shape: Shape
+    shape: Shape,
+    onClick: () -> Unit = {}
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "anim_shape"
+    )
+
+    val animatedShape = remember(shape, pressProgress) {
+        if (shape is RoundedCornerShape) {
+            object : Shape {
+                override fun createOutline(
+                    size: Size,
+                    layoutDirection: LayoutDirection,
+                    density: Density
+                ): Outline {
+                    val targetPx = with(density) { 20.dp.toPx() }
+                    fun lerp(start: Float, stop: Float, fraction: Float) =
+                        (1 - fraction) * start + fraction * stop
+
+                    val ts = lerp(shape.topStart.toPx(size, density), targetPx, pressProgress)
+                    val te = lerp(shape.topEnd.toPx(size, density), targetPx, pressProgress)
+                    val bs = lerp(shape.bottomStart.toPx(size, density), targetPx, pressProgress)
+                    val be = lerp(shape.bottomEnd.toPx(size, density), targetPx, pressProgress)
+
+                    return Outline.Rounded(
+                        RoundRect(
+                            rect = Rect(
+                                0f,
+                                0f,
+                                size.width,
+                                size.height
+                            ),
+                            topLeft = CornerRadius(ts),
+                            topRight = CornerRadius(te),
+                            bottomRight = CornerRadius(be),
+                            bottomLeft = CornerRadius(bs)
+                        )
+                    )
+                }
+            }
+        } else shape
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = shape,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(animatedShape),
+        shape = animatedShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -925,15 +1006,30 @@ fun FeatureCard(
                         .background(iconColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (icon is ImageVector) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else if (icon is Int) {
+                        Icon(
+                            painter = painterResource(id = icon),
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             },
-            modifier = Modifier.padding(vertical = 4.dp),
+            modifier = Modifier
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = onClick
+                )
+                .padding(vertical = 4.dp),
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent
             )
@@ -962,7 +1058,7 @@ fun ExpressiveButton(
 
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = tween(durationMillis = 200),
         label = "btnMorph"
     )
 
@@ -972,6 +1068,47 @@ fun ExpressiveButton(
         shape = RoundedCornerShape(cornerPercent),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        interactionSource = interactionSource,
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontFamily = GoogleSansFlex,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+fun ExpressiveOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    contentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val cornerPercent by animateIntAsState(
+        targetValue = if (isPressed) 15 else 50,
+        animationSpec = tween(durationMillis = 200),
+        label = "btnMorph"
+    )
+
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(cornerPercent),
+        colors = ButtonDefaults.outlinedButtonColors(
             contentColor = contentColor
         ),
         interactionSource = interactionSource,
