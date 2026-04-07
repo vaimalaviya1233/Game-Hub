@@ -6,7 +6,9 @@ import android.content.SharedPreferences
 import android.os.Build
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -211,15 +213,19 @@ fun ExpressiveIconButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 20 else 50,
         animationSpec = tween(durationMillis = 200),
         label = "corner"
     )
 
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerPercent)) else Modifier
+
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(44.dp),
+        modifier = Modifier.size(44.dp).then(borderModifier),
         shape = RoundedCornerShape(cornerPercent),
         color = containerColor,
         contentColor = contentColor,
@@ -329,6 +335,7 @@ fun HomeSearchBar(
 fun AnimatedPlayButton(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
@@ -336,9 +343,11 @@ fun AnimatedPlayButton(onClick: () -> Unit) {
         label = "btnMorph"
     )
 
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.onPrimary, RoundedCornerShape(cornerPercent)) else Modifier
+
     Button(
         onClick = onClick,
-        modifier = Modifier.height(40.dp),
+        modifier = Modifier.height(40.dp).then(borderModifier),
         shape = RoundedCornerShape(cornerPercent),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,

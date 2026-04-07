@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.fedeveloper95.games.PREF_USER_NAME
@@ -81,11 +82,23 @@ fun NamePopup(
         text = {
             OutlinedTextField(
                 value = tempName,
-                onValueChange = { tempName = it },
+                onValueChange = {
+                    if (it.length <= 15) {
+                        tempName = it
+                    }
+                },
                 label = {
                     Text(
                         text = stringResource(R.string.dialog_edit_name_hint),
                         fontFamily = GoogleSansFlex
+                    )
+                },
+                supportingText = {
+                    Text(
+                        text = "${tempName.length}/15",
+                        fontFamily = GoogleSansFlex,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End
                     )
                 },
                 singleLine = true,

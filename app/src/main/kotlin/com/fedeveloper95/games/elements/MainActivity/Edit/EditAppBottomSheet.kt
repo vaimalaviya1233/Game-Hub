@@ -268,10 +268,9 @@ fun EditAppBottomSheet(
             val isIconChanged = customIconUri != null
             val isTitleChanged = customName != game.name
 
-            FlowRow(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Button(
                     onClick = {
@@ -279,6 +278,7 @@ fun EditAppBottomSheet(
                         selectedOption = -1
                     },
                     enabled = isIconChanged,
+                    modifier = Modifier.weight(1f),
                     shape = ButtonGroupDefaults.connectedLeadingButtonShapes().shape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -287,7 +287,12 @@ fun EditAppBottomSheet(
                         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
-                    Text(stringResource(R.string.edit_restore_icon), fontFamily = GoogleSansFlex)
+                    Text(
+                        text = stringResource(R.string.edit_restore_icon),
+                        fontFamily = GoogleSansFlex,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
                 Button(
@@ -295,6 +300,7 @@ fun EditAppBottomSheet(
                         customName = game.name
                     },
                     enabled = isTitleChanged,
+                    modifier = Modifier.weight(1f),
                     shape = ButtonGroupDefaults.connectedTrailingButtonShapes().shape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -303,7 +309,12 @@ fun EditAppBottomSheet(
                         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
-                    Text(stringResource(R.string.edit_restore_title), fontFamily = GoogleSansFlex)
+                    Text(
+                        text = stringResource(R.string.edit_restore_title),
+                        fontFamily = GoogleSansFlex,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 

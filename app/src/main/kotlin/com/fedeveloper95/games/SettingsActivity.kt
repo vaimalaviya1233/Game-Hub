@@ -21,8 +21,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -93,9 +95,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -161,6 +165,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val configuration = LocalConfiguration.current
     val isExpandedScreen = configuration.screenWidthDp >= 600
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
+    val haptic = LocalHapticFeedback.current
 
     var currentTheme by remember { mutableIntStateOf(prefs.getInt(PREF_THEME, THEME_SYSTEM)) }
     var currentAppIcon by remember { mutableStateOf(prefs.getString(PREF_APP_ICON, "Expressive") ?: "Expressive") }
@@ -493,6 +498,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                             Slider(
                                 value = statsInterval,
                                 onValueChange = {
+                                    if (statsInterval != it) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    }
                                     statsInterval = it
                                     prefs.edit().putFloat(PREF_STATS_INTERVAL, it).apply()
                                 },
@@ -719,6 +727,8 @@ fun SettingsItemCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
     val pressProgress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = tween(durationMillis = 200),
@@ -761,10 +771,13 @@ fun SettingsItemCard(
         } else shape
     }
 
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, animatedShape) else Modifier
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(animatedShape),
+            .clip(animatedShape)
+            .then(borderModifier),
         shape = animatedShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -839,8 +852,11 @@ fun SettingsSwitchCard(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
     val pressProgress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = tween(durationMillis = 200),
@@ -883,10 +899,13 @@ fun SettingsSwitchCard(
         } else shape
     }
 
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, animatedShape) else Modifier
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(animatedShape),
+            .clip(animatedShape)
+            .then(borderModifier),
         shape = animatedShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -939,7 +958,10 @@ fun SettingsSwitchCard(
             trailingContent = {
                 Switch(
                     checked = checked,
-                    onCheckedChange = onCheckedChange,
+                    onCheckedChange = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCheckedChange(it)
+                    },
                     thumbContent = {
                         if (checked) {
                             Icon(
@@ -961,7 +983,10 @@ fun SettingsSwitchCard(
                 .clickable(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
-                    onClick = { onCheckedChange(!checked) }
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCheckedChange(!checked)
+                    }
                 )
                 .padding(vertical = 4.dp),
             colors = ListItemDefaults.colors(

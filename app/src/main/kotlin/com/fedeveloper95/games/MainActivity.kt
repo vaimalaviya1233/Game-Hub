@@ -30,11 +30,13 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -123,15 +125,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -916,10 +927,30 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
 
 @Composable
 fun HomeSearchBar(query: String, onQueryChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+
     TextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.key) {
+                        Key.DirectionDown -> {
+                            focusManager.moveFocus(FocusDirection.Down)
+                            true
+                        }
+                        Key.DirectionUp -> {
+                            focusManager.moveFocus(FocusDirection.Up)
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            },
         placeholder = { Text(stringResource(R.string.search_apps), fontFamily = GoogleSansFlex) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         shape = CircleShape,
@@ -938,6 +969,7 @@ fun HomeSearchBar(query: String, onQueryChange: (String) -> Unit) {
 fun AnimatedShopButton(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
@@ -945,9 +977,13 @@ fun AnimatedShopButton(onClick: () -> Unit) {
         label = "btnMorph"
     )
 
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerPercent)) else Modifier
+
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(40.dp),
+        modifier = Modifier
+            .size(40.dp)
+            .then(borderModifier),
         shape = RoundedCornerShape(cornerPercent),
         color = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1078,14 +1114,26 @@ fun HorizontalGameCard(
     onStoreClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    val borderModifier = if (isFocused) Modifier.border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(32.dp)) else Modifier
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.72f)
             .clip(RoundedCornerShape(32.dp))
+            .then(borderModifier)
             .combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
                 onClick = onLaunch,
-                onLongClick = onLongClick
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
             ),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(
@@ -1121,13 +1169,16 @@ fun HorizontalGameCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            AnimatedShopButton(onClick = onStoreClick)
-
             Spacer(modifier = Modifier.weight(1f))
 
-            AnimatedPlayButton(onClick = onLaunch)
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AnimatedShopButton(onClick = onStoreClick)
+                Spacer(modifier = Modifier.width(16.dp))
+                AnimatedPlayButton(onClick = onLaunch)
+            }
         }
     }
 }
@@ -1140,14 +1191,26 @@ fun GridGameCard(
     onLaunch: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    val borderModifier = if (isFocused) Modifier.border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp)) else Modifier
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(RoundedCornerShape(24.dp))
+            .then(borderModifier)
             .combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
                 onClick = onLaunch,
-                onLongClick = onLongClick
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
             ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -1211,6 +1274,7 @@ fun SwipeableGameContainer(
     val scope = rememberCoroutineScope()
 
     val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
 
     val isDark = isSystemInDarkTheme()
     val deleteBackgroundColor = if (isDark) Color(0xFFF2B8B5) else Color(0xFFB3261E)
@@ -1267,6 +1331,7 @@ fun SwipeableGameContainer(
                         if (currentVal < 0) {
                             if (currentVal < -limit * 0.5f) {
                                 scope.launch {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     offset.animateTo(-limit, tween(200))
                                     onDelete()
                                 }
@@ -1286,6 +1351,7 @@ fun SwipeableGameContainer(
                         if (currentVal > 0) {
                             if (currentVal > limit * 0.5f) {
                                 scope.launch {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     offset.animateTo(limit, tween(200))
                                     onDelete()
                                 }
@@ -1423,8 +1489,10 @@ fun GameListItem(
     onStoreClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val topRound = if (isSingle || isFirst) 28.dp else 4.dp
     val bottomRound = if (isSingle || isLast) 28.dp else 4.dp
@@ -1435,17 +1503,22 @@ fun GameListItem(
     val bottomEnd by animateDpAsState(targetValue = if (isPressed) 28.dp else bottomRound, animationSpec = tween(200), label = "")
 
     val shape = RoundedCornerShape(topStart, topEnd, bottomStart, bottomEnd)
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(104.dp)
             .clip(shape)
+            .then(borderModifier)
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
                 onClick = onLaunch,
-                onLongClick = onLongClick
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
             ),
         shape = shape,
         colors = CardDefaults.cardColors(
@@ -1473,10 +1546,8 @@ fun GameListItem(
                     fontFamily = GoogleSansFlex
                 )
             }
-
             AnimatedShopButton(onClick = onStoreClick)
-
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             AnimatedPlayButton(onClick = onLaunch)
         }
     }
@@ -1487,12 +1558,15 @@ fun GameListItem(
 fun GetMoreGamesCard(context: Context) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val cornerPercent by animateIntAsState(
         targetValue = if (isPressed) 15 else 50,
         animationSpec = tween(200),
         label = "btnMorph"
     )
+
+    val borderModifier = if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerPercent)) else Modifier
 
     Surface(
         onClick = {
@@ -1502,7 +1576,8 @@ fun GetMoreGamesCard(context: Context) {
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            .then(borderModifier),
         shape = RoundedCornerShape(cornerPercent),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 8.dp,

@@ -164,7 +164,12 @@ fun EditModeScreen(onBack: () -> Unit, viewModel: GameViewModel = viewModel()) {
                     fontFamily = GoogleSansFlex,
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ExpressiveIconButton(
