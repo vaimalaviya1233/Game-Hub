@@ -2,7 +2,7 @@
 
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white) ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white) ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=android&logoColor=white) ![Material 3](https://img.shields.io/badge/Material%203-Expressive-purple?style=for-the-badge)
 
-![Game Hub banner](https://github.com/user-attachments/assets/ff5cdbcd-c8bb-45e8-9adc-1fb9d690b264)
+![Game-Hub banner 2 0](https://github.com/user-attachments/assets/2ca61922-0cf3-4018-93b9-752ef9736df3)
 
 
 **A minimalist game launcher built with Jetpack Compose and Material 3 Expressive.**
@@ -34,5 +34,7 @@ Found a bug or have a feature request? Reach me directly via Telegram.
 <details>
   <summary><b>Click to expand screenshots</b></summary>
   <br>
-  <img width="260" alt="Game Hub" src="https://github.com/user-attachments/assets/15c7636f-cdb7-4835-8367-7a3578eeb5ed" />
-  <img width="260" alt="Game Hub settings" src="https://github.com/user-attachments/assets/1a3c0a4d-c718-4f38-b3da-e4802b0df5ef" />
+  <img width="265" alt="Main default" src="https://github.com/user-attachments/assets/0e8b82e5-0656-4de9-b508-6fbc191dfbd1" />
+  <img width="265" alt="Main grid" src="https://github.com/user-attachments/assets/2cad8cdf-8433-4049-986b-b83be9b2cbe6" />
+  <img width="265" alt="Edit app" src="https://github.com/user-attachments/assets/22d15318-0975-42fb-90b4-9ac852579a41" />
+  <img width="265" alt="Settings" src="https://github.com/user-attachments/assets/d05a2ceb-e85b-42e0-b668-baad39df8049" />
