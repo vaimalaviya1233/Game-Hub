@@ -81,9 +81,6 @@ val GoogleSansFlexThin = FontFamily(
     Font(
         resId = R.font.sans_flex,
         variationSettings = FontVariation.Settings(
-            FontVariation.slant(-9f),
-            FontVariation.width(111f),
-            FontVariation.weight(333),
             FontVariation.Setting("GRAD", 100f),
             FontVariation.Setting("ROND", 100f)
         )

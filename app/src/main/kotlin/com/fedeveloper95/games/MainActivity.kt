@@ -74,6 +74,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
@@ -97,7 +98,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -106,6 +107,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
+import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -113,6 +117,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -130,6 +135,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -390,19 +396,26 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = searchQuery.isEmpty(),
-                enter = scaleIn(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
-                exit = scaleOut(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200))
-            ) {
-                FloatingActionButton(
-                    onClick = { showAddSheet = true },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_game))
+            FloatingActionButtonMenu(
+                expanded = false,
+                button = {
+                    ToggleFloatingActionButton(
+                        checked = false,
+                        onCheckedChange = { showAddSheet = true },
+                        modifier = Modifier.animateFloatingActionButton(
+                            visible = searchQuery.isEmpty(),
+                            alignment = Alignment.BottomEnd
+                        )
+                    ) {
+                        val imageVector by remember { derivedStateOf { if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add } }
+                        Icon(
+                            painter = rememberVectorPainter(imageVector),
+                            contentDescription = stringResource(R.string.add_game),
+                            modifier = Modifier.animateIcon({ checkedProgress })
+                        )
+                    }
                 }
-            }
+            ) {}
         }
     ) { padding ->
         Column(
