@@ -2,8 +2,7 @@
 
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white) ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white) ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=android&logoColor=white) ![Material 3](https://img.shields.io/badge/Material%203-Expressive-purple?style=for-the-badge)
 
-![Game-Hub banner 2 0](https://github.com/user-attachments/assets/2ca61922-0cf3-4018-93b9-752ef9736df3)
-
+![Game-Hub-banner](https://github.com/user-attachments/assets/ffdee772-683f-416b-88ee-c4656a13a11e)
 
 **A minimalist game launcher built with Jetpack Compose and Material 3 Expressive.**
 
