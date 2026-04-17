@@ -1,35 +1,32 @@
 # Game Hub
 
+**Play like never before**
+
+![Game-Hub-banner](https://github.com/user-attachments/assets/ffdee772-683f-416b-88ee-c4656a13a11e)
+
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white) ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white) ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=android&logoColor=white) ![Material 3](https://img.shields.io/badge/Material%203-Expressive-purple?style=for-the-badge)
 
-![Game-Hub banner 2 0](https://github.com/user-attachments/assets/2ca61922-0cf3-4018-93b9-752ef9736df3)
+### :sparkles: About
+
+**Game Hub** organizes all your games in a single, dedicated space, eliminating the need to hunt through your messy app drawer.  If a simple list isn't enough, Game Hub offers extensive customization, such as **Grid and Horizontal views**, customizable game **icons** and **names**, and detailed **game stats** to monitor your gameplay. The setup process is intuitive, fast, and non-intrusive, guiding you through every feature. Additionally, Game Hub features an integrated **in-app update system** to make sure that you are always running the latest version.
+
+### :art: Design
+
+The UI is crafted following the latest **Material 3 Expressive** guidelines. Game Hub works perfectly on every device, whether you use a regular phone, a foldable or a tablet.
+
+### :light_blue_heart: Loved help
+
+Special thanks to my awesome girlfriend, [Gaia](https://github.com/Gaia-Kapo), who helped me a lot with the design choices and suggested the base idea. I love you 🩵
+
+### :warning: Feedback
+
+Found a bug or have a feature request? **Create a new issue (preferred)** or reach me directly via [Telegram](https://t.me/fedeveloper95). 
+
+### :bangbang: Disclaimer
+No fork of this project will recieve support, if you use a fork, ask the forker to support you.
 
 
-**A minimalist game launcher built with Jetpack Compose and Material 3 Expressive.**
-
-[![Get it on GitHub](https://img.shields.io/badge/Get%20it%20on-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/FeDeveloper95/Game-Hub/releases)
-
-### About
-
-Game Hub brings the simplicity of the classic OxygenOS 11 Game Space to modern Android devices. It eliminates the need to scroll through a messy app drawer to find your next adventure.
-
-This app acts as a dedicated sanctuary for your games. It automatically detects installed games and presents them in a clean, unified interface. While it is designed with **Pixel and AOSP** aesthetics in priority, it functions seamlessly on any Android 8+ device.
-
-### Design
-
-The UI is crafted following the latest **Material 3 Expressive** guidelines.
-
-### Loved help
-
-Special thanks to my awesome girlfriend, [Gaia](https://github.com/Gaia-Kapo), who helped me a lot with the design choices and new features. I love you 🩵
-
-### Feedback
-
-Found a bug or have a feature request? Reach me directly via Telegram.
-
-[Contact me on Telegram](https://t.me/fedeveloper95)
-
-### Screenshots
+### :camera: Screenshots
 
 <details>
   <summary><b>Click to expand screenshots</b></summary>
