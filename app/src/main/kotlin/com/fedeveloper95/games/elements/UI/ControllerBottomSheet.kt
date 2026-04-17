@@ -106,7 +106,7 @@ fun ControllerBottomSheet(
                             controllerName.contains("DualSense", ignoreCase = true) -> R.drawable.ic_playstation_controller
                     controllerName.contains("Switch", ignoreCase = true) ||
                             controllerName.contains("Joy-Con", ignoreCase = true) -> R.drawable.ic_switch_controller
-                    else -> R.drawable.controller
+                    else -> R.drawable.ic_controller_generic
                 }
 
                 Icon(

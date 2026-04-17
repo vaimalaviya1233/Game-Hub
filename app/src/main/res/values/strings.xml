@@ -203,5 +203,7 @@
     <string name="controller_name_xbox" tools:ignore="MissingTranslation">Xbox Wireless Controller</string>
     <string name="controller_name_playstation" tools:ignore="MissingTranslation">DualSense Wireless Controller</string>
     <string name="controller_name_joycon" tools:ignore="MissingTranslation">Joy-Con (L/R)</string>
+    <string name="controller_generic" tools:ignore="MissingTranslation">Generic Controller</string>
+    <string name="controller_name_generic" tools:ignore="MissingTranslation">Unknown controller</string>
 
 </resources>

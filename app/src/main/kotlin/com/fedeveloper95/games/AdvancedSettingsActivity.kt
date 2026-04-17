@@ -1,10 +1,13 @@
 package com.fedeveloper95.games
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -67,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.RestartPopup
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.exportSettings
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.importSettings
@@ -106,7 +110,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
 
-    var autoUpdates by remember { mutableStateOf(prefs.getBoolean(PREF_AUTO_UPDATES, true)) }
+    var autoUpdates by remember { mutableStateOf(prefs.getBoolean("pref_auto_updates", true)) }
     var testControllerFeatures by remember { mutableStateOf(prefs.getBoolean("test_controller_features", false)) }
     var showRestartDialog by remember { mutableStateOf(false) }
     var showCommunitySheet by remember { mutableStateOf(false) }
@@ -114,6 +118,10 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
     var showControllerSheet by remember { mutableStateOf(false) }
     var selectedControllerName by remember { mutableStateOf(context.getString(R.string.controller_name_xbox)) }
     var showControllerMenu by remember { mutableStateOf(false) }
+
+    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let {
@@ -185,7 +193,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                 checked = autoUpdates,
                 onCheckedChange = {
                     autoUpdates = it
-                    prefs.edit().putBoolean(PREF_AUTO_UPDATES, it).apply()
+                    prefs.edit().putBoolean("pref_auto_updates", it).apply()
                 }
             )
 
@@ -282,9 +290,16 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                 onCheckedChange = {
                     testControllerFeatures = it
                     prefs.edit().putBoolean("test_controller_features", it).apply()
-                    if (it && !Settings.canDrawOverlays(context)) {
-                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
-                        context.startActivity(intent)
+                    if (it) {
+                        if (!Settings.canDrawOverlays(context)) {
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                            context.startActivity(intent)
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                                bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+                            }
+                        }
                     }
                 }
             )
@@ -357,6 +372,18 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                                 },
                                 onClick = {
                                     selectedControllerName = context.getString(R.string.controller_name_joycon)
+                                    showControllerMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.controller_generic),
+                                        fontFamily = GoogleSansFlex
+                                    )
+                                },
+                                onClick = {
+                                    selectedControllerName = context.getString(R.string.controller_name_generic)
                                     showControllerMenu = false
                                 }
                             )
