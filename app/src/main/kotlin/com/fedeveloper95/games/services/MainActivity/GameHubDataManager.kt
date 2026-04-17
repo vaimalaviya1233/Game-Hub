@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Gamepad
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Star

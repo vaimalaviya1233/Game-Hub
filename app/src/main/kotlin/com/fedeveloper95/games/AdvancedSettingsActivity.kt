@@ -39,7 +39,6 @@ import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Settings as SettingsIcon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -82,6 +81,7 @@ import com.fedeveloper95.games.elements.ui.GoogleSansFlex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import androidx.compose.material.icons.rounded.Settings as SettingsIcon
 
 class AdvancedSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
