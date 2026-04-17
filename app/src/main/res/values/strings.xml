@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Game Hub</string>
     <string name="games_count_suffix">games ready</string>
     <string name="refresh">Refresh</string>
@@ -189,5 +189,19 @@
     <string name="settings_app_icon_flat">Flat</string>
     <string name="dialog_app_icon_title">Choose App Icon</string>
     <string name="feat_order_desc">Tap the pencil button to enter Edit Mode or hold a game to customize its appearance.</string>
+
+    <string name="controller_connected" tools:ignore="MissingTranslation">Controller Connected</string>
+    <string name="action_settings" tools:ignore="MissingTranslation">Settings</string>
+    <string name="action_ok" tools:ignore="MissingTranslation">OK</string>
+    <string name="settings_test_controller_title" tools:ignore="MissingTranslation">Test more wireless controller features</string>
+    <string name="settings_test_controller_desc" tools:ignore="MissingTranslation">Enable experimental features for controllers</string>
+    <string name="settings_test_controller_simulate_title" tools:ignore="MissingTranslation">Simulate controller connection</string>
+    <string name="settings_test_controller_simulate_desc" tools:ignore="MissingTranslation">Show the controller connection bottom sheet</string>
+    <string name="controller_xbox" tools:ignore="MissingTranslation">Xbox</string>
+    <string name="controller_playstation" tools:ignore="MissingTranslation">PlayStation</string>
+    <string name="controller_joycon" tools:ignore="MissingTranslation">Joy-Con</string>
+    <string name="controller_name_xbox" tools:ignore="MissingTranslation">Xbox Wireless Controller</string>
+    <string name="controller_name_playstation" tools:ignore="MissingTranslation">DualSense Wireless Controller</string>
+    <string name="controller_name_joycon" tools:ignore="MissingTranslation">Joy-Con (L/R)</string>
 
 </resources>

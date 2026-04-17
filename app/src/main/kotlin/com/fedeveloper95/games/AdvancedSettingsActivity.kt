@@ -1,9 +1,12 @@
 package com.fedeveloper95.games
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -29,12 +33,18 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.Group
-import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Settings as SettingsIcon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,6 +58,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -60,6 +71,7 @@ import com.fedeveloper95.games.elements.AdvancedSettingsActivity.RestartPopup
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.exportSettings
 import com.fedeveloper95.games.elements.AdvancedSettingsActivity.importSettings
 import com.fedeveloper95.games.elements.MainActivity.CommunityBottomSheet
+import com.fedeveloper95.games.elements.UI.ControllerBottomSheet
 import com.fedeveloper95.games.elements.UI.ExpressiveIconButton
 import com.fedeveloper95.games.elements.ui.GameHubTheme
 import com.fedeveloper95.games.elements.ui.GoogleSansFlex
@@ -84,6 +96,7 @@ class AdvancedSettingsActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdvancedSettingsScreen(onBack: () -> Unit) {
@@ -92,10 +105,15 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
     val isExpandedScreen = configuration.screenWidthDp >= 600
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("game_hub_settings", Context.MODE_PRIVATE) }
+
     var autoUpdates by remember { mutableStateOf(prefs.getBoolean(PREF_AUTO_UPDATES, true)) }
+    var testControllerFeatures by remember { mutableStateOf(prefs.getBoolean("test_controller_features", false)) }
     var showRestartDialog by remember { mutableStateOf(false) }
     var showCommunitySheet by remember { mutableStateOf(false) }
     var showResetPopup by remember { mutableStateOf(false) }
+    var showControllerSheet by remember { mutableStateOf(false) }
+    var selectedControllerName by remember { mutableStateOf(context.getString(R.string.controller_name_xbox)) }
+    var showControllerMenu by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let {
@@ -158,7 +176,7 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
                 .padding(top = 8.dp, bottom = padding.calculateBottomPadding() + 48.dp)
         ) {
             SettingsSwitchCard(
-                icon = Icons.Rounded.Settings,
+                icon = Icons.Rounded.SettingsIcon,
                 title = stringResource(R.string.settings_auto_updates_title),
                 subtitle = stringResource(R.string.settings_auto_updates_desc),
                 containerColor = Color(0xFFfcbd00),
@@ -253,6 +271,102 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(2.dp))
 
+            SettingsSwitchCard(
+                icon = Icons.Rounded.Gamepad,
+                title = stringResource(R.string.settings_test_controller_title),
+                subtitle = stringResource(R.string.settings_test_controller_desc),
+                containerColor = Color(0xFFcba6ff),
+                iconColor = Color(0xFF320073),
+                shape = RoundedCornerShape(4.dp),
+                checked = testControllerFeatures,
+                onCheckedChange = {
+                    testControllerFeatures = it
+                    prefs.edit().putBoolean("test_controller_features", it).apply()
+                    if (it && !Settings.canDrawOverlays(context)) {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                        context.startActivity(intent)
+                    }
+                }
+            )
+
+            if (testControllerFeatures) {
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    SettingsItemCard(
+                        icon = Icons.Rounded.Gamepad,
+                        title = stringResource(R.string.settings_test_controller_simulate_title),
+                        subtitle = stringResource(R.string.settings_test_controller_simulate_desc),
+                        containerColor = Color(0xFFFCBD00),
+                        iconColor = Color(0xFF6D3A01),
+                        shape = RoundedCornerShape(4.dp),
+                        onClick = {
+                            showControllerSheet = true
+                        }
+                    )
+
+                    Box(modifier = Modifier.padding(end = 4.dp)) {
+                        IconButton(
+                            onClick = { showControllerMenu = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.MoreVert,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showControllerMenu,
+                            onDismissRequest = { showControllerMenu = false },
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.controller_xbox),
+                                        fontFamily = GoogleSansFlex
+                                    )
+                                },
+                                onClick = {
+                                    selectedControllerName = context.getString(R.string.controller_name_xbox)
+                                    showControllerMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.controller_playstation),
+                                        fontFamily = GoogleSansFlex
+                                    )
+                                },
+                                onClick = {
+                                    selectedControllerName = context.getString(R.string.controller_name_playstation)
+                                    showControllerMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.controller_joycon),
+                                        fontFamily = GoogleSansFlex
+                                    )
+                                },
+                                onClick = {
+                                    selectedControllerName = context.getString(R.string.controller_name_joycon)
+                                    showControllerMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
             SettingsItemCard(
                 icon = Icons.Rounded.BugReport,
                 title = stringResource(R.string.settings_test_crash_title),
@@ -294,6 +408,14 @@ fun AdvancedSettingsScreen(onBack: () -> Unit) {
     if (showCommunitySheet) {
         CommunityBottomSheet(
             onDismiss = { showCommunitySheet = false }
+        )
+    }
+
+    if (showControllerSheet) {
+        ControllerBottomSheet(
+            controllerName = selectedControllerName,
+            onDismiss = { showControllerSheet = false },
+            onSettingsClick = { showControllerSheet = false }
         )
     }
 

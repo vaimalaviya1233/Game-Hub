@@ -491,7 +491,7 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                             fontFamily = GoogleSansFlex,
                             fontWeight = FontWeight.Bold,
                             fontSize = 42.sp,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = Color.White,
                             lineHeight = 48.sp
                         )
                         buttonsContent()
@@ -615,7 +615,8 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
                                                             )
 
-                                                            val cols = if (isExpandedScreen) 2 else gridColumns.intValue
+                                                            val availableWidth = configuration.screenWidthDp - if (isExpandedScreen) 168 else 40
+                                                            val cols = if (isExpandedScreen) maxOf(2, availableWidth / 160) else gridColumns.intValue
                                                             val chunkedFavorites = favoriteGames.chunked(cols)
 
                                                             Column(
@@ -656,29 +657,29 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                         }
                                                     }
                                                 }
-                                            }
 
-                                            items(if (searchQuery.isEmpty()) normalGames else displayGames, key = { it.packageName }) { game ->
-                                                SwipeableGameContainer(
-                                                    item = game,
-                                                    isDeleteCandidate = gameToRemove?.packageName == game.packageName,
-                                                    showLaunchCount = showLaunchCount.value,
-                                                    showPlayTime = showPlayTime.value,
-                                                    onDelete = { gameToRemove = game },
-                                                    shape = RoundedCornerShape(24.dp),
-                                                    fullSwipeStats = true
-                                                ) {
-                                                    GridGameCard(
-                                                        game = game,
-                                                        columns = if (isExpandedScreen) 2 else gridColumns.intValue,
-                                                        onLaunch = { launchGame(game) },
-                                                        onLongClick = { gameToEdit = game }
-                                                    )
+                                                items(if (searchQuery.isEmpty()) normalGames else displayGames, key = { it.packageName }) { game ->
+                                                    SwipeableGameContainer(
+                                                        item = game,
+                                                        isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                        showLaunchCount = showLaunchCount.value,
+                                                        showPlayTime = showPlayTime.value,
+                                                        onDelete = { gameToRemove = game },
+                                                        shape = RoundedCornerShape(24.dp),
+                                                        fullSwipeStats = true
+                                                    ) {
+                                                        GridGameCard(
+                                                            game = game,
+                                                            columns = if (isExpandedScreen) 2 else gridColumns.intValue,
+                                                            onLaunch = { launchGame(game) },
+                                                            onLongClick = { gameToEdit = game }
+                                                        )
+                                                    }
                                                 }
-                                            }
-                                            if (searchQuery.isEmpty() && showGetMoreGames.value) {
-                                                item(span = { GridItemSpan(maxLineSpan) }) {
-                                                    GetMoreGamesCard(context)
+                                                if (searchQuery.isEmpty() && showGetMoreGames.value) {
+                                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                                        GetMoreGamesCard(context)
+                                                    }
                                                 }
                                             }
                                         }
@@ -710,31 +711,45 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                                     fontFamily = GoogleSansFlex,
                                                                     modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
                                                                 )
-                                                                favoriteGames.forEachIndexed { index, game ->
-                                                                    val shape = when {
-                                                                        favoriteGames.size == 1 -> RoundedCornerShape(28.dp)
-                                                                        index == 0 -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
-                                                                        index == favoriteGames.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
-                                                                        else -> RoundedCornerShape(4.dp)
-                                                                    }
-                                                                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
-                                                                        SwipeableGameContainer(
-                                                                            item = game,
-                                                                            isDeleteCandidate = gameToRemove?.packageName == game.packageName,
-                                                                            showLaunchCount = showLaunchCount.value,
-                                                                            showPlayTime = showPlayTime.value,
-                                                                            onDelete = { gameToRemove = game },
-                                                                            shape = shape
+
+                                                                val availableWidth = configuration.screenWidthDp - 168
+                                                                val cols = maxOf(1, availableWidth / 340)
+                                                                val chunkedFavorites = favoriteGames.chunked(cols)
+
+                                                                Column(
+                                                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                                ) {
+                                                                    chunkedFavorites.forEach { rowGames ->
+                                                                        Row(
+                                                                            modifier = Modifier.fillMaxWidth(),
+                                                                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                                                                         ) {
-                                                                            GameListItem(
-                                                                                game = game,
-                                                                                isSingle = favoriteGames.size == 1,
-                                                                                isFirst = index == 0,
-                                                                                isLast = index == favoriteGames.size - 1,
-                                                                                onLaunch = { launchGame(game) },
-                                                                                onStoreClick = { openPlayStore(game.packageName) },
-                                                                                onLongClick = { gameToEdit = game }
-                                                                            )
+                                                                            rowGames.forEach { game ->
+                                                                                Box(modifier = Modifier.weight(1f)) {
+                                                                                    SwipeableGameContainer(
+                                                                                        item = game,
+                                                                                        isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                                                        showLaunchCount = showLaunchCount.value,
+                                                                                        showPlayTime = showPlayTime.value,
+                                                                                        onDelete = { gameToRemove = game },
+                                                                                        shape = RoundedCornerShape(28.dp)
+                                                                                    ) {
+                                                                                        GameListItem(
+                                                                                            game = game,
+                                                                                            isSingle = true,
+                                                                                            isFirst = true,
+                                                                                            isLast = true,
+                                                                                            onLaunch = { launchGame(game) },
+                                                                                            onStoreClick = { openPlayStore(game.packageName) },
+                                                                                            onLongClick = { gameToEdit = game }
+                                                                                        )
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            repeat(cols - rowGames.size) {
+                                                                                Spacer(modifier = Modifier.weight(1f))
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
@@ -1602,7 +1617,7 @@ fun GetMoreGamesCard(context: Context) {
             horizontalArrangement = Arrangement.Center
         ) {
             Icon(
-                Icons.Default.Apps,
+                Icons.Outlined.ShoppingBag,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(26.dp)

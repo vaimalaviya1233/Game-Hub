@@ -53,9 +53,6 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -171,8 +168,6 @@ fun UpdaterScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<UpdateStatus>(UpdateStatus.Idle) }
     var isDownloading by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = stringResource(R.string.update_error_check)
 
     val currentVersionName = remember {
         try {
@@ -264,11 +259,6 @@ fun UpdaterScreen(onBack: () -> Unit) {
                     delay(3000L - elapsed)
                 }
                 status = UpdateStatus.Error
-                snackbarHostState.currentSnackbarData?.dismiss()
-                snackbarHostState.showSnackbar(
-                    message = errorMessage,
-                    withDismissAction = true
-                )
                 return@launch
             }
 
@@ -286,11 +276,6 @@ fun UpdaterScreen(onBack: () -> Unit) {
                     delay(3000L - elapsed)
                 }
                 status = UpdateStatus.Error
-                snackbarHostState.currentSnackbarData?.dismiss()
-                snackbarHostState.showSnackbar(
-                    message = errorMessage,
-                    withDismissAction = true
-                )
             }
         }
     }
@@ -524,32 +509,7 @@ fun UpdaterScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-
-                ErrorSnackbar(
-                    hostState = snackbarHostState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 12.dp)
-                )
             }
         }
     }
-}
-
-@Composable
-fun ErrorSnackbar(hostState: SnackbarHostState, modifier: Modifier = Modifier) {
-    SnackbarHost(
-        hostState = hostState,
-        modifier = modifier,
-        snackbar = { data ->
-            Snackbar(
-                snackbarData = data,
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                shape = RoundedCornerShape(16.dp)
-            )
-        }
-    )
 }

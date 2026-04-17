@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Star
@@ -72,16 +73,14 @@ class GameViewModel : ViewModel() {
 
     private var loadJob: Job? = null
 
-    // Cache per le icone (circa 1/8 della memoria disponibile)
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
     private val cacheSize = maxMemory / 8
     private val iconCache = object : LruCache<String, ImageBitmap>(cacheSize) {
         override fun sizeOf(key: String, bitmap: ImageBitmap): Int {
-            return (bitmap.width * bitmap.height * 4) / 1024 // stima in KB per RGBA_8888
+            return (bitmap.width * bitmap.height * 4) / 1024
         }
     }
 
-    // Cache per i dati delle icone vettoriali
     private val vectorIconCache = LruCache<String, Pair<ImageVector, Color>>(100)
 
     fun getCachedBitmap(key: String): ImageBitmap? {
@@ -139,7 +138,17 @@ class GameViewModel : ViewModel() {
                 context.packageManager.getApplicationIcon(packageName).toBitmap()
             }
 
-            val imageBitmap = bitmap.asImageBitmap()
+            val MAX_ICON_SIZE = 192
+            val finalBitmap = if (bitmap.width > MAX_ICON_SIZE || bitmap.height > MAX_ICON_SIZE) {
+                val ratio = minOf(MAX_ICON_SIZE.toFloat() / bitmap.width, MAX_ICON_SIZE.toFloat() / bitmap.height)
+                val width = (bitmap.width * ratio).roundToInt()
+                val height = (bitmap.height * ratio).roundToInt()
+                Bitmap.createScaledBitmap(bitmap, width, height, true)
+            } else {
+                bitmap
+            }
+
+            val imageBitmap = finalBitmap.asImageBitmap()
             iconCache.put(cacheKey, imageBitmap)
             return@withContext imageBitmap
 
@@ -147,7 +156,7 @@ class GameViewModel : ViewModel() {
             e.printStackTrace()
             try {
                 val fallbackBitmap = context.packageManager.getApplicationIcon(packageName).toBitmap().asImageBitmap()
-                iconCache.put(packageName, fallbackBitmap) // Salva col package name come fallback
+                iconCache.put(packageName, fallbackBitmap)
                 return@withContext fallbackBitmap
             } catch (ex: Exception) {
                 ex.printStackTrace()
@@ -160,7 +169,6 @@ class GameViewModel : ViewModel() {
         iconCache.evictAll()
         vectorIconCache.evictAll()
     }
-
 
     fun loadGames(context: Context) {
         loadJob?.cancel()
@@ -256,6 +264,12 @@ class GameViewModel : ViewModel() {
                 }
             }
 
+            loadedData.first.forEach { game ->
+                launch(Dispatchers.IO) {
+                    loadIcon(context, game.packageName, game.customIconUri)
+                }
+            }
+
             _games.value = loadedData.first
             _allApps.value = loadedData.second
             _isLoading.value = false
@@ -279,11 +293,9 @@ class GameViewModel : ViewModel() {
         }
         editor.commit()
 
-        // Rimuovi dalla cache l'icona vecchia
         val cacheKey = customIconUri ?: packageName
         iconCache.remove(cacheKey)
         vectorIconCache.remove(cacheKey)
-
 
         if (isFavorite) {
             addToPrefs(context, FAVORITE_GAMES_PREF, packageName)
