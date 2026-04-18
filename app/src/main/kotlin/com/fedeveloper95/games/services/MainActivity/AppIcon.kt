@@ -26,11 +26,9 @@ fun AppIcon(
     val context = LocalContext.current
     val cacheKey = customIconUri ?: packageName
 
-    // Prova a leggere subito dalla cache per evitare sfarfallii iniziali se già presente
     var bitmap by remember(cacheKey) { mutableStateOf(viewModel.getCachedBitmap(cacheKey)) }
     var builtInIconData by remember(cacheKey) { mutableStateOf(viewModel.getCachedVectorIcon(cacheKey)) }
 
-    // Carica asincronamente solo se non è già in cache
     if (bitmap == null && builtInIconData == null) {
         LaunchedEffect(packageName, customIconUri) {
             val loadedData = viewModel.loadIcon(context, packageName, customIconUri)

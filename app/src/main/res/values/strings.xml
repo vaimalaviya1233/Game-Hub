@@ -3,7 +3,7 @@
     <string name="games_count_suffix">games ready</string>
     <string name="refresh">Refresh</string>
     <string name="add_game">Add Game</string>
-    <string name="search_apps">Search apps...</string>
+    <string name="search_apps">Search apps…</string>
     <string name="cancel">Cancel</string>
     <string name="remove">Remove</string>
     <string name="play">Play</string>
@@ -129,12 +129,12 @@
     <string name="settings_auto_updates_title">Automatic updates</string>
     <string name="settings_auto_updates_desc">Check for updates on startup</string>
 
-    <string name="update_checking">Checking...</string>
+    <string name="update_checking">Checking…</string>
     <string name="update_no_update">You have the latest version</string>
     <string name="update_latest_version_msg">No updates available at the moment.</string>
     <string name="update_available">Version %1$s Available!</string>
     <string name="update_action">Update</string>
-    <string name="update_downloading">Downloading...</string>
+    <string name="update_downloading">Downloading…</string>
     <string name="update_error">Error</string>
     <string name="update_error_msg">Could not check or download update.</string>
     <string name="unknown">Unknown</string>
