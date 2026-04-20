@@ -656,29 +656,29 @@ fun GameHubScreen(viewModel: GameViewModel = viewModel()) {
                                                         }
                                                     }
                                                 }
+                                            }
 
-                                                items(if (searchQuery.isEmpty()) normalGames else displayGames, key = { it.packageName }) { game ->
-                                                    SwipeableGameContainer(
-                                                        item = game,
-                                                        isDeleteCandidate = gameToRemove?.packageName == game.packageName,
-                                                        showLaunchCount = showLaunchCount.value,
-                                                        showPlayTime = showPlayTime.value,
-                                                        onDelete = { gameToRemove = game },
-                                                        shape = RoundedCornerShape(24.dp),
-                                                        fullSwipeStats = true
-                                                    ) {
-                                                        GridGameCard(
-                                                            game = game,
-                                                            columns = if (isExpandedScreen) 2 else gridColumns.intValue,
-                                                            onLaunch = { launchGame(game) },
-                                                            onLongClick = { gameToEdit = game }
-                                                        )
-                                                    }
+                                            items(if (searchQuery.isEmpty()) normalGames else displayGames, key = { it.packageName }) { game ->
+                                                SwipeableGameContainer(
+                                                    item = game,
+                                                    isDeleteCandidate = gameToRemove?.packageName == game.packageName,
+                                                    showLaunchCount = showLaunchCount.value,
+                                                    showPlayTime = showPlayTime.value,
+                                                    onDelete = { gameToRemove = game },
+                                                    shape = RoundedCornerShape(24.dp),
+                                                    fullSwipeStats = true
+                                                ) {
+                                                    GridGameCard(
+                                                        game = game,
+                                                        columns = if (isExpandedScreen) 2 else gridColumns.intValue,
+                                                        onLaunch = { launchGame(game) },
+                                                        onLongClick = { gameToEdit = game }
+                                                    )
                                                 }
-                                                if (searchQuery.isEmpty() && showGetMoreGames.value) {
-                                                    item(span = { GridItemSpan(maxLineSpan) }) {
-                                                        GetMoreGamesCard(context)
-                                                    }
+                                            }
+                                            if (searchQuery.isEmpty() && showGetMoreGames.value) {
+                                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                                    GetMoreGamesCard(context)
                                                 }
                                             }
                                         }
